@@ -1,0 +1,272 @@
+{
+  "entities": {
+    "project": {
+      "title": "Project",
+      "description": "Portofolio projects built by HaitianDev",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "tech": { "type": "array" },
+        "demoUrl": { "type": "string" },
+        "githubUrl": { "type": "string" }
+      },
+      "required": ["id", "title"]
+    },
+    "testimonial": {
+      "title": "Testimonial",
+      "description": "Reviews and ratings given by clients",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "roleCompany": { "type": "string" },
+        "quote": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "rating": { "type": "number" }
+      },
+      "required": ["id", "name", "quote"]
+    },
+    "landingStat": {
+      "title": "LandingStat",
+      "description": "Key statistics displayed on the landing page under the hero section",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fondateur": { "type": "string" },
+        "expert": { "type": "string" },
+        "projet": { "type": "string" },
+        "anne": { "type": "string" }
+      },
+      "required": ["id", "fondateur", "expert", "projet", "anne"]
+    },
+    "appStat": {
+      "title": "AppStat",
+      "description": "Global application landing statistics with fixed fields",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fondateur": { "type": "string" },
+        "expert": { "type": "string" },
+        "projet": { "type": "string" },
+        "anne": { "type": "string" }
+      },
+      "required": ["id", "fondateur", "expert", "projet", "anne"]
+    },
+    "partner": {
+      "title": "Partner",
+      "description": "Partner organizations or clients",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "websiteUrl": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "quoteRequest": {
+      "title": "QuoteRequest",
+      "description": "Submissions from clients requesting a quote (Devis)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "company": { "type": "string" },
+        "description": { "type": "string" },
+        "budget": { "type": "string" },
+        "deadline": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "name", "email", "description"]
+    },
+    "quote": {
+      "title": "Quote",
+      "description": "Detailed project quote requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientName": { "type": "string" },
+        "email": { "type": "string" },
+        "company": { "type": "string" },
+        "specs": { "type": "string" },
+        "estimatedBudget": { "type": "string" },
+        "desiredDeadline": { "type": "string" },
+        "serviceType": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "clientName", "email", "serviceType", "status"]
+    },
+    "user": {
+      "title": "User",
+      "description": "User profiles and permissions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "accessStatus": { "type": "string" },
+        "companyName": { "type": "string" }
+      },
+      "required": ["id", "fullName", "email", "role", "accessStatus"]
+    },
+    "supportMessage": {
+      "title": "SupportMessage",
+      "description": "Message logs for administrative support",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sender": { "type": "string" },
+        "email": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "sender", "email", "message"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "Admin message sent to students or clients",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "destinataire": { "type": "string" },
+        "email": { "type": "string" },
+        "objet": { "type": "string" },
+        "message": { "type": "string" },
+        "statut": { "type": "string" }
+      },
+      "required": ["id", "destinataire", "email", "objet", "message", "statut"]
+    },
+    "formation": {
+      "title": "Formation",
+      "description": "Premium training courses d'élite",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "titre": { "type": "string" },
+        "formateur": { "type": "string" },
+        "dateDebut": { "type": "string" },
+        "duree": { "type": "string" },
+        "niveau": { "type": "string" },
+        "organisme": { "type": "string" },
+        "lienInscription": { "type": "string" },
+        "urlImage": { "type": "string" }
+      },
+      "required": ["id", "titre", "formateur", "dateDebut", "duree", "niveau", "organisme"]
+    },
+    "article": {
+      "title": "Article",
+      "description": "Tech blog articles or learning posts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "summary": { "type": "string" },
+        "content": { "type": "string" },
+        "readTime": { "type": "string" },
+        "author": { "type": "object" },
+        "date": { "type": "string" },
+        "slug": { "type": "string" }
+      },
+      "required": ["id", "title", "content"]
+    },
+    "doc": {
+      "title": "Documentation",
+      "description": "Technical instruction guides",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "sections": { "type": "array" }
+      },
+      "required": ["id", "title"]
+    },
+    "projectAccess": {
+      "title": "ProjectAccess",
+      "description": "Admin generated CMS password and API tokens given to clients",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientName": { "type": "string" },
+        "projectName": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "adminLink": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "apiToken": { "type": "string" },
+        "dbUri": { "type": "string" }
+      },
+      "required": ["id", "clientName", "projectName", "clientEmail", "adminLink", "username", "password"]
+    }
+  },
+  "firestore": {
+    "acces_projets": {
+      "schema": "projectAccess",
+      "description": "Secure access keys and CMS endpoints of client projects"
+    },
+    "projects": {
+      "schema": "project",
+      "description": "Static & dynamic portfolio projects list"
+    },
+    "testimonials": {
+      "schema": "testimonial",
+      "description": "Interactive client feedback and testimonials list"
+    },
+    "landing_stats": {
+      "schema": "landingStat",
+      "description": "Stats shown on the landing page hero underside"
+    },
+    "partners": {
+      "schema": "partner",
+      "description": "Enterprise partners logos list"
+    },
+    "stats": {
+      "schema": "appStat",
+      "description": "Global counters for landing page"
+    },
+    "devis": {
+      "schema": "quote",
+      "description": "Customer business request inquiries"
+    },
+    "users": {
+      "schema": "user",
+      "description": "Active system user profiles"
+    },
+    "support_messages": {
+      "schema": "supportMessage",
+      "description": "Support feedback messages"
+    },
+    "messages": {
+      "schema": "message",
+      "description": "Notifications or direct communication messages"
+    },
+    "formations": {
+      "schema": "formation",
+      "description": "HaitianDev courses formations list"
+    },
+    "articles": {
+      "schema": "article",
+      "description": "Tech blog articles or learning posts"
+    },
+    "docs": {
+      "schema": "doc",
+      "description": "Technical instruction guides"
+    }
+  }
+}

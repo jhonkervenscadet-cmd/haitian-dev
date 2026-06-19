@@ -1,0 +1,25 @@
+# https://www.robotstxt.org/robotstxt.html
+# Group 1: All active search engine bots
+User-agent: *
+Allow: /
+Allow: /about-us
+Allow: /services/
+Allow: /portfolio
+Allow: /blog
+Allow: /training
+Allow: /gallery
+Allow: /process
+Allow: /events
+Allow: /privacy-policy
+Allow: /terms-of-service
+
+# Block private user or admin portals
+Disallow: /admin/
+Disallow: /admin-login
+Disallow: /admin-panel
+Disallow: /login
+Disallow: /signup
+Disallow: /api/
+
+# Identify the core sitemap
+Sitemap: https://haitiandev.com/sitemap.xml

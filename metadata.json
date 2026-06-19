@@ -1,0 +1,8 @@
+{
+  "name": "Haitian D.E.V.",
+  "description": "Studio technologique d'élite basé en Haïti. Nous concevons des plateformes web, mobiles, et d'IA haut de gamme.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: Checks if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Gets the user profile role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Helper: Checks if the user is an Admin
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'devhaitian@gmail.com' ||
+        request.auth.token.email.endsWith('@haitiandev.com') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin')
+      );
+    }
+
+    // Admin collection
+    match /admin/{adminId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admins1 collection
+    match /admins1/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Stats collection
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Projects
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Testimonials
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Landing page stats
+    match /landing_stats/{statId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Partners
+    match /partners/{partnerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Education / Scolarité
+    match /education/{educationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Education Formations
+    match /education_formations/{formationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Devis: Everyone can submit. Only Admins or the owning client (matching email) can view their quote requests.
+    match /devis/{requestId} {
+      allow create: if true;
+      allow read: if isAdmin() || (isAuthenticated() && (resource.data.email == request.auth.token.email || resource.data.clientEmail == request.auth.token.email));
+      allow write, update, delete: if isAdmin();
+    }
+    
+    // User Profiles: Users can read/write their own profiles, Admins can do everything
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
+    
+    // Support Messages
+    match /support_messages/{messageId} {
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // Messages
+    match /messages/{messageId} {
+      allow create: if true;
+      allow read, write: if isAdmin();
+    }
+
+    // Formations
+    match /formations/{formationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Articles
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Docs
+    match /docs/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Acces Projets
+    match /acces_projets/{accessId} {
+      allow read, list: if isAdmin() || (isAuthenticated() && resource.data.clientEmail == request.auth.token.email);
+      allow write: if isAdmin();
+    }
+    
+    // Popups
+    match /haitian_dev_popups/{popupId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Banners
+    match /haitian_dev_banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Invoices
+    match /invoices/{invoiceId} {
+      allow get: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
+      allow list: if isAdmin() || isAuthenticated();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
+    }
+  }
+}
