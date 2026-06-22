@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, initializeFirestore, doc, getDocFromServer } from "firebase/firestore";
+import { getFirestore, initializeFirestore, doc, getDocFromServer, enableMultiTabIndexedDbPersistence, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import firebaseAppletConfig from "../../firebase-applet-config.json";
@@ -40,6 +40,15 @@ if (isFirebaseConfigured) {
       ? initializeFirestore(app, firestoreSettings, firebaseConfig.firestoreDatabaseId)
       : initializeFirestore(app, firestoreSettings);
       
+    // Enable offline persistence for robust use on unstable internet connections
+    enableMultiTabIndexedDbPersistence(db).catch((err) => {
+      if (err.code == 'failed-precondition') {
+         console.warn('Multiple tabs open, persistence can only be enabled in one tab at a a time.');
+      } else if (err.code == 'unimplemented') {
+         console.warn('The current browser does not support all of the features required to enable persistence');
+      }
+    });
+
     console.log(`Firebase initialized for project: ${firebaseConfig.projectId}, database: ${firebaseConfig.firestoreDatabaseId || "(default)"}`);
     auth = getAuth(app);
     storage = getStorage(app);

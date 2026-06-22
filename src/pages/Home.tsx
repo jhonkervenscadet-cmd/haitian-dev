@@ -223,6 +223,19 @@ export const Home: React.FC = () => {
           ? "Haitian D.E.V. connects Haiti to elite technology. Premium web/mobile apps, custom AI integration, software engineering training & digital transformation." 
           : "Haitian D.E.V. propulse Haïti vers l'élite technologique. Applications web/mobiles sur-mesure, intégration d'IA, et de formations d'excellence en ingénierie logicielle."}
         schema={getOrganizationSchema()}
+        keywords={[
+          "HaitianDev",
+          "Haitian D.E.V.",
+          "développement web Haïti",
+          "agence digitale Haïti",
+          "création site internet Haïti",
+          "intelligence artificielle Haïti",
+          "formation programmation Haïti",
+          "ingénierie logicielle",
+          "expert React",
+          "expert Node.js",
+          "Haiti Tech Studio"
+        ]}
       />
       
       {/* 1. Hero Section */}

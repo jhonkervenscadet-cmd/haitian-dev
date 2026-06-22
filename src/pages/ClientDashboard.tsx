@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Briefcase, MessageSquare, CreditCard, FileText, Settings, LogOut, Plus, ChevronRight, Activity, Clock, Server, Home, UserCheck, Search, Loader2, Key, ExternalLink, Eye, EyeOff, Copy, Check, Lock, ShieldCheck } from "lucide-react";
 import { db, isFirebaseEnabled, auth, storage } from "../lib/firebase";
 import { collection, query, where, onSnapshot, doc, getDoc, updateDoc, addDoc, setDoc } from "firebase/firestore";
-import { onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
+import { onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import { handleFirestoreError, OperationType } from "../utils/firebaseSync";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -303,6 +303,14 @@ export const ClientDashboard: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
+  const handleLogout = async () => {
+    try {
+      if (auth) await signOut(auth);
+    } catch(e) {}
+    localStorage.removeItem("haitiandev_user");
+    navigate('/login');
+  };
+
   const clientInfo = useMemo(() => {
     const savedUserRaw = localStorage.getItem("haitiandev_user");
     const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
@@ -311,6 +319,82 @@ export const ClientDashboard: React.FC = () => {
       email: firebaseUser?.email || savedUser?.email || "contact@haiti-innovate.ht"
     };
   }, [firebaseUser, userProfile]);
+
+  const [seenMap, setSeenMap] = useState<Record<string, string[]>>({});
+
+  // Synchronize seen status with Firestore data loading and tab changes
+  useEffect(() => {
+    const syncTabSeen = (tabId: string, currentList: any[], storageKey: string) => {
+      const currentIds = currentList.map(item => String(item.id));
+      const raw = localStorage.getItem(storageKey);
+      
+      if (raw === null) {
+        // First run initialization: think of all current items as already read
+        localStorage.setItem(storageKey, JSON.stringify(currentIds));
+        setSeenMap(prev => {
+          if (JSON.stringify(prev[tabId]) !== JSON.stringify(currentIds)) {
+            return { ...prev, [tabId]: currentIds };
+          }
+          return prev;
+        });
+        return;
+      }
+
+      try {
+        const storedSeenIds = JSON.parse(raw) as string[];
+        
+        // If the tab is currently active, mark all items as seen immediately
+        if (activeTab === tabId) {
+          const newSeen = Array.from(new Set([...storedSeenIds, ...currentIds]));
+          localStorage.setItem(storageKey, JSON.stringify(newSeen));
+          setSeenMap(prev => {
+            if (JSON.stringify(prev[tabId]) !== JSON.stringify(newSeen)) {
+              return { ...prev, [tabId]: newSeen };
+            }
+            return prev;
+          });
+        } else {
+          // If not active tab, just read what's in local storage
+          setSeenMap(prev => {
+            if (JSON.stringify(prev[tabId]) !== JSON.stringify(storedSeenIds)) {
+              return { ...prev, [tabId]: storedSeenIds };
+            }
+            return prev;
+          });
+        }
+      } catch (e) {
+        // Fallback
+        setSeenMap(prev => {
+          if (JSON.stringify(prev[tabId]) !== JSON.stringify([])) {
+            return { ...prev, [tabId]: [] };
+          }
+          return prev;
+        });
+      }
+    };
+
+    syncTabSeen("projects", projects, "haitiandev_seen_projects");
+    syncTabSeen("cms-access", projectAccesses, "haitiandev_seen_cms_access");
+    syncTabSeen("messages", messages, "haitiandev_seen_messages");
+    syncTabSeen("billing", invoices, "haitiandev_seen_billing");
+  }, [activeTab, projects, projectAccesses, messages, invoices]);
+
+  // Notification badge calculation of unseen elements per tab
+  const unseenCounts = useMemo(() => {
+    const getCount = (tabId: string, currentList: any[]) => {
+      const seenIds = seenMap[tabId] || [];
+      const unseen = currentList.filter(item => !seenIds.includes(String(item.id)));
+      return unseen.length;
+    };
+
+    return {
+      projects: getCount("projects", projects),
+      "cms-access": getCount("cms-access", projectAccesses),
+      messages: getCount("messages", messages),
+      billing: getCount("billing", invoices),
+      settings: 0
+    };
+  }, [seenMap, projects, projectAccesses, messages, invoices]);
 
   // Settings states
   const [editName, setEditName] = useState("");
@@ -896,6 +980,7 @@ export const ClientDashboard: React.FC = () => {
                 <nav className="space-y-2 flex-grow">
                   {TABS.map((tab) => {
                     const Icon = tab.icon;
+                    const tabUnseen = unseenCounts[tab.id as keyof typeof unseenCounts] || 0;
                     return (
                       <button
                         key={tab.id}
@@ -904,14 +989,26 @@ export const ClientDashboard: React.FC = () => {
                           setIsMobileMenuOpen(false);
                         }}
                         className={`
-                          w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium transition-all
+                          w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-medium transition-all
                           ${activeTab === tab.id 
                             ? "bg-white text-black shadow-lg" 
                             : "text-zinc-500 hover:text-white hover:bg-white/5"}
                         `}
                       >
-                        <Icon className="w-4 h-4" />
-                        {tab.label}
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4" />
+                          <span>{tab.label}</span>
+                        </div>
+                        {tabUnseen > 0 && (
+                          <span className={`
+                            h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-black rounded-full border shadow-md animate-pulse transition-all
+                            ${activeTab === tab.id
+                              ? "bg-[#D21034] text-white border-black/10"
+                              : "bg-[#D21034] text-white border-white/10"}
+                          `}>
+                            {tabUnseen}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -925,7 +1022,7 @@ export const ClientDashboard: React.FC = () => {
                 </nav>
 
                 <div className="mt-8 pt-6 border-t border-white/5">
-                  <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
                     <LogOut className="w-4 h-4" />
                     Déconnexion
                   </button>
@@ -965,26 +1062,39 @@ export const ClientDashboard: React.FC = () => {
             <nav className="space-y-1">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
+                const tabUnseen = unseenCounts[tab.id as keyof typeof unseenCounts] || 0;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all
+                      w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium transition-all
                       ${activeTab === tab.id 
                         ? "bg-white text-black shadow-[0_10px_30px_rgba(255,255,255,0.1)] scale-[1.02]" 
                         : "text-zinc-500 hover:text-white hover:bg-white/5"}
                     `}
                   >
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4" />
+                      <span>{tab.label}</span>
+                    </div>
+                    {tabUnseen > 0 && (
+                      <span className={`
+                        h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-black rounded-full border shadow-md animate-pulse transition-all
+                        ${activeTab === tab.id
+                          ? "bg-[#D21034] text-white border-black/10"
+                          : "bg-[#D21034] text-white border-white/10"}
+                      `}>
+                        {tabUnseen}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </nav>
 
             <div className="mt-8 pt-6 border-t border-white/5">
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
+              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
                 <LogOut className="w-4 h-4" />
                 Déconnexion
               </button>

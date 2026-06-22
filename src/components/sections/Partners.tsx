@@ -63,6 +63,9 @@ export const Partners: React.FC = () => {
   }, []);
 
 
+  // De-duplicate by id to guarantee no duplicate logos are rendered
+  const uniquePartners = Array.from(new Map(partnersData.map((p: any) => [String(p.id), p])).values());
+
   return (
     <section className="py-12 relative bg-transparent overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -77,91 +80,47 @@ export const Partners: React.FC = () => {
           />
         </div>
 
-        {/* Carousel Container */}
+        {/* Partners Container */}
         <div className="relative w-full rounded-2xl bg-gradient-to-r from-[#00209F] to-[#D21034] p-[1px] group">
-          <div className="relative w-full rounded-2xl bg-slate-950 sm:bg-slate-900/80 backdrop-blur-md p-6 sm:p-8 overflow-hidden">
+          <div className="relative w-full rounded-2xl bg-slate-950 sm:bg-slate-900/80 backdrop-blur-md p-8 md:p-12 overflow-hidden">
             
-            {/* Gradient Edges to fade out logos */}
-            <div className="absolute top-0 bottom-0 left-0 w-16 md:w-32 bg-gradient-to-r from-slate-950 sm:from-slate-900 to-transparent z-10 pointer-events-none" />
-            <div className="absolute top-0 bottom-0 right-0 w-16 md:w-32 bg-gradient-to-l from-slate-950 sm:from-slate-900 to-transparent z-10 pointer-events-none" />
-
-            {/* Marquee Motion */}
-            <div className="flex w-max animate-marquee group-hover:[animation-play-state:paused]">
-              
-              {/* First Set */}
-              <div className="flex items-center gap-16 md:gap-24 pr-16 md:pr-24">
-                {partnersData.map((partner: any, index: number) => {
-                  const Icon = ICONS_MAP[partner.icon] || Globe;
-                  const Element = partner.websiteUrl ? 'a' : 'div';
-                  const extraProps = partner.websiteUrl ? {
-                    href: partner.websiteUrl,
-                    target: "_blank",
-                    rel: "noopener noreferrer"
-                  } : {};
-                  
-                  return (
-                    <Element 
-                      key={`first-${partner.id}-${index}`}
-                      className="flex items-center justify-center min-w-[160px] h-16 grayscale opacity-65 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer"
-                      {...extraProps}
-                    >
-                      {partner.logoUrl ? (
-                        <img 
-                          src={partner.logoUrl} 
-                          alt={partner.name} 
-                          referrerPolicy="no-referrer"
-                          className="h-9 max-w-[110px] object-contain mr-3 filter brightness-100"
-                          onError={(e) => {
-                            // If load fails, hide image and show standard backup icon
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <Icon className={`w-8 h-8 mr-3 ${partner.color || 'text-[#00209F]'}`} />
-                      )}
-                      <span className="font-display font-semibold text-xl tracking-wide text-white">{partner.name}</span>
-                    </Element>
-                  );
-                })}
-              </div>
-
-              {/* Second Set (Duplicate) */}
-              <div className="flex items-center gap-16 md:gap-24 pr-16 md:pr-24">
-                {partnersData.map((partner: any, index: number) => {
-                  const Icon = ICONS_MAP[partner.icon] || Globe;
-                  const Element = partner.websiteUrl ? 'a' : 'div';
-                  const extraProps = partner.websiteUrl ? {
-                    href: partner.websiteUrl,
-                    target: "_blank",
-                    rel: "noopener noreferrer"
-                  } : {};
-
-                  return (
-                    <Element 
-                      key={`second-${partner.id}-${index}`}
-                      className="flex items-center justify-center min-w-[160px] h-16 grayscale opacity-65 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer"
-                      {...extraProps}
-                    >
-                      {partner.logoUrl ? (
-                        <img 
-                          src={partner.logoUrl} 
-                          alt={partner.name} 
-                          referrerPolicy="no-referrer"
-                          className="h-9 max-w-[110px] object-contain mr-3 filter brightness-100"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <Icon className={`w-8 h-8 mr-3 ${partner.color || 'text-[#00209F]'}`} />
-                      )}
-                      <span className="font-display font-semibold text-xl tracking-wide text-white">{partner.name}</span>
-                    </Element>
-                  );
-                })}
-              </div>
-
+            {/* Centered Wrap of Unique Logos */}
+            <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 md:gap-x-16 md:gap-y-10">
+              {uniquePartners.map((partner: any) => {
+                const Icon = ICONS_MAP[partner.icon] || Globe;
+                const Element = partner.websiteUrl ? 'a' : 'div';
+                const extraProps = partner.websiteUrl ? {
+                  href: partner.websiteUrl,
+                  target: "_blank",
+                  rel: "noopener noreferrer"
+                } : {};
+                
+                return (
+                  <Element 
+                    key={`partner-${partner.id}`}
+                    className="flex items-center justify-center grayscale opacity-65 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer"
+                    {...extraProps}
+                  >
+                    {partner.logoUrl ? (
+                      <img 
+                        src={partner.logoUrl} 
+                        alt={partner.name} 
+                        referrerPolicy="no-referrer"
+                        className="h-8 max-w-[110px] object-contain mr-2.5 filter brightness-100"
+                        onError={(e) => {
+                          // If load fails, hide image and show standard backup icon
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Icon className={`w-7 h-7 mr-2.5 ${partner.color || 'text-[#00209F]'}`} />
+                    )}
+                    <span className="font-display font-semibold text-lg md:text-xl tracking-wide text-white">{partner.name}</span>
+                  </Element>
+                );
+              })}
             </div>
+
           </div>
         </div>
       </div>

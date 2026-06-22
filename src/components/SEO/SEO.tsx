@@ -10,6 +10,7 @@ export interface SEOProps {
   schema?: Record<string, any> | Record<string, any>[];
   publishedTime?: string;
   author?: string;
+  keywords?: string | string[];
 }
 
 export const SEO: React.FC<SEOProps> = ({
@@ -21,6 +22,7 @@ export const SEO: React.FC<SEOProps> = ({
   schema,
   publishedTime,
   author,
+  keywords,
 }) => {
   const { pathname } = useLocation();
 
@@ -64,6 +66,11 @@ export const SEO: React.FC<SEOProps> = ({
     // 3. Set Base Attributes
     setMetaTag("name", "description", description);
     setOrCreateLinkTag("canonical", canonicalUrl);
+
+    if (keywords) {
+      const keywordsStr = Array.isArray(keywords) ? keywords.join(", ") : keywords;
+      setMetaTag("name", "keywords", keywordsStr);
+    }
 
     // 4. Open Graph Tags (Facebook / LinkedIn / Slack)
     setMetaTag("property", "og:title", title);
@@ -110,7 +117,7 @@ export const SEO: React.FC<SEOProps> = ({
         jsonLdScript.remove();
       }
     };
-  }, [title, description, canonicalUrl, ogType, ogImage, schema, publishedTime, author]);
+  }, [title, description, canonicalUrl, ogType, ogImage, schema, publishedTime, author, keywords]);
 
   return null;
 };

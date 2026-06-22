@@ -7,10 +7,13 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { SEO } from "../components/SEO/SEO";
 import { getOrganizationSchema } from "../utils/seoSchemas";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { collection, getDocs, query, where, setDoc, doc } from "firebase/firestore";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { db, auth } from "../lib/firebase";
+import { hashPassword } from "../utils/hash";
 
 export const AdminLogin: React.FC = () => {
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
 
@@ -18,6 +21,15 @@ export const AdminLogin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    const session = localStorage.getItem("haitiandev_admin_session");
+    if (session) {
+      setIsAuthenticated(true);
+      setTimeout(() => navigate("/admin"), 500);
+    }
+  }, [navigate]);
 
   // Simulated metrics inside Admin panel
   const [nodes, setNodes] = useState([
@@ -34,16 +46,65 @@ export const AdminLogin: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const adminQ = query(
-        collection(db, "admins1"),
-        where("email", "==", formData.email),
-        where("password", "==", formData.password)
-      );
+      const emailObj = formData.email.trim().toLowerCase();
+      const passwordObj = formData.password.trim();
+      const hashedInput = await hashPassword(passwordObj);
 
-      const querySnapshot = await getDocs(adminQ);
+      let isFirebaseAuthenticated = false;
+
+      // Primary: Try Firebase Authentication
+      try {
+        await signInWithEmailAndPassword(auth, emailObj, passwordObj);
+        isFirebaseAuthenticated = true;
+      } catch (authErr) {
+        console.warn("Firebase Auth failed, checking custom admins1 collection:", authErr);
+      }
+
+      let matchedAdmin = null;
       
-      if (!querySnapshot.empty) {
+      // Secondary: Try custom admins1 collection
+      try {
+        const adminQ = query(collection(db, "admins1"), where("email", "==", emailObj));
+        const allAdminsSnapshot = await getDocs(adminQ);
+        allAdminsSnapshot.forEach(doc => {
+          const data = doc.data();
+          const dbPassword = String(data.password || "").trim();
+          
+          if (dbPassword === passwordObj || dbPassword === hashedInput) {
+            matchedAdmin = data;
+          }
+        });
+      } catch(dbErr) {
+         console.warn("Failed to check admins1 collection", dbErr);
+      }
+      
+      if (!isFirebaseAuthenticated && matchedAdmin) {
+         // Auto-provision Firebase Auth account to ensure Firestore rules work
+         try {
+            const userCred = await createUserWithEmailAndPassword(auth, emailObj, passwordObj);
+            await setDoc(doc(db, "users", userCred.user.uid), {
+               email: emailObj,
+               role: "Admin",
+               name: matchedAdmin.name || "Admin",
+               createdAt: new Date().toISOString()
+            });
+            isFirebaseAuthenticated = true;
+         } catch (createErr: any) {
+            console.warn("Failed to auto-provision Firebase Auth user:", createErr);
+         }
+      }
+      
+      if (isFirebaseAuthenticated || matchedAdmin) {
+        // Persist session
+        const adminSession = {
+          email: emailObj,
+          loginTime: new Date().toISOString(),
+          role: "Admin"
+        };
+        localStorage.setItem("haitiandev_admin_session", JSON.stringify(adminSession));
         setIsAuthenticated(true);
+        
+        setTimeout(() => navigate("/admin"), 1000);
       } else {
         setError(isEn ? "Invalid credentials." : "Identifiants invalides.");
       }

@@ -142,8 +142,7 @@ export const Footer: React.FC = () => {
               <Link to="/terms-of-service" className="hover:text-blue-500 transition-colors duration-200">
                 Terms of Service
               </Link>
-              <span className="text-zinc-800">|</span>
-              <Link to="/admin" className="hover:text-red-500 transition-colors duration-200 font-bold">
+              <Link to="/admin" className="opacity-0 p-1">
                 Admin Panel
               </Link>
             </div>

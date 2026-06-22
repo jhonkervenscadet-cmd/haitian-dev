@@ -136,7 +136,7 @@ export const loadCollection = async <T extends { id: string }>(
       if (!snapshot.empty) {
         const firestoreList: T[] = [];
         snapshot.forEach(docSnap => {
-          firestoreList.push({ id: docSnap.id, ...docSnap.data() } as T);
+          firestoreList.push({ ...docSnap.data(), id: docSnap.id } as T);
         });
         
         // Update local storage with latest Firestore values
@@ -181,7 +181,7 @@ export const subscribeToCollection = <T extends { id: string }>(
       return onSnapshot(colRef, (snapshot) => {
         const list: T[] = [];
         snapshot.forEach(docSnap => {
-          list.push({ id: docSnap.id, ...docSnap.data() } as T);
+          list.push({ ...docSnap.data(), id: docSnap.id } as T);
         });
         saveLocalData(localKey, list);
         onUpdate(list);

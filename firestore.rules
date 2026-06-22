@@ -14,8 +14,10 @@ service cloud.firestore {
     // Helper: Checks if the user is an Admin
     function isAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == 'devhaitian@gmail.com' ||
-        request.auth.token.email.endsWith('@haitiandev.com') ||
+        (request.auth.token.email != null && request.auth.token.email == 'devhaitian@gmail.com') ||
+        (request.auth.token.email != null && request.auth.token.email == 'contact@haitiandev.org') ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.com')) ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org')) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin')
       );
     }
@@ -138,7 +140,7 @@ service cloud.firestore {
     // Invoices
     match /invoices/{invoiceId} {
       allow get: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
-      allow list: if isAdmin() || isAuthenticated();
+      allow list: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
     }

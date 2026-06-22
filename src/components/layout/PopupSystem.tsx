@@ -349,29 +349,6 @@ export const PopupSystem: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Floating Member Messages Panel Button */}
-      {userSession && userSession.role !== "Admin" && (
-        <div className="fixed bottom-4 right-4 z-40">
-          <button
-            onClick={() => setIsInboxOpen(true)}
-            className="relative flex items-center bg-gradient-to-r from-red-650 to-blue-650 hover:brightness-110 active:scale-95 transition-all p-3 sm:p-4 rounded-full text-white shadow-lg shadow-red-500/15 border border-white/20 cursor-pointer animate-pulse hover:animate-none group"
-            title="Mon Espace Courrier HaitianDev"
-          >
-            <MessageSquare className="w-5 h-5 text-white animate-none" />
-            
-            {recipientMessages.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-[10px] font-mono leading-none rounded-full px-1.5 py-1 text-white font-extrabold border border-zinc-950 animate-bounce">
-                {recipientMessages.length}
-              </span>
-            )}
-            
-            <span className="max-w-0 group-hover:max-w-[150px] overflow-hidden transition-all duration-500 ease-in-out pl-0 group-hover:pl-2 text-xs font-bold font-mono tracking-wide uppercase whitespace-nowrap">
-              Espace Messages
-            </span>
-          </button>
-        </div>
-      )}
-
       {/* Received Messages Viewer Overlay */}
       {isInboxOpen && userSession && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">

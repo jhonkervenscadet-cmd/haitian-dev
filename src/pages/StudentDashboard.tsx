@@ -22,7 +22,7 @@ import {
   ExternalLink 
 } from "lucide-react";
 import { db, isFirebaseEnabled, auth } from "../lib/firebase";
-import { onAuthStateChanged, EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
+import { onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { BLOG_DATA, DOCS_DATA, FormationItem } from "../data/staticData";
 import { loadCollection, subscribeToCollection, saveCollectionItem } from "../utils/firebaseSync";
@@ -78,6 +78,14 @@ export const StudentDashboard: React.FC = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      if (auth) await signOut(auth);
+    } catch(e) {}
+    localStorage.removeItem("haitiandev_user");
+    navigate('/login');
+  };
 
   // Load and listen to authenticated student profile
   const [studentInfo, setStudentInfo] = useState(() => {
@@ -381,7 +389,7 @@ export const StudentDashboard: React.FC = () => {
                 </nav>
 
                 <div className="mt-8 pt-6 border-t border-white/5">
-                  <button className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
                     <LogOut className="w-4 h-4" />
                     Déconnexion
                   </button>
@@ -437,7 +445,7 @@ export const StudentDashboard: React.FC = () => {
             </nav>
 
             <div className="mt-8 pt-6 border-t border-white/5">
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
+              <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-rose-500 hover:bg-rose-500/10 transition-all">
                 <LogOut className="w-4 h-4" />
                 Déconnexion
               </button>
