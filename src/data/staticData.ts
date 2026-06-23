@@ -22,6 +22,7 @@ export interface ProjectItem {
   stats?: { label: string; value: string }[];
   client?: string;
   year?: string;
+  actionUrl?: string;
 }
 
 export interface GalleryItem {

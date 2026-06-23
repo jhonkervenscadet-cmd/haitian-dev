@@ -129,7 +129,8 @@ export const Portfolio: React.FC = () => {
         { label: "Sécurité", value: "Optimisé" }
       ],
       client: p.client || original?.client || "Haitian Dev",
-      year: p.year || original?.year || "2025"
+      year: p.year || original?.year || "2025",
+      actionUrl: p.actionUrl || original?.actionUrl || "https://haitiandev.org"
     };
   };
 
@@ -220,9 +221,9 @@ export const Portfolio: React.FC = () => {
                 {isEn ? "No projects found matching your selection." : "Aucun projet trouvé correspondant à votre sélection."}
               </motion.div>
             ) : filteredProjects.map((proj, idx) => {
-              const displayTitle = t(`data.projects.${proj.id}.title`) || proj.title;
-              const displaySubtitle = t(`data.projects.${proj.id}.subtitle`) || proj.subtitle;
-              const displayDesc = t(`data.projects.${proj.id}.description`) || proj.description;
+              const displayTitle = proj.title || t(`data.projects.${proj.id}.title`);
+              const displaySubtitle = proj.subtitle || t(`data.projects.${proj.id}.subtitle`);
+              const displayDesc = proj.description || t(`data.projects.${proj.id}.description`);
               const categoryBadge = proj.category === "AI" && !isEn ? "IA" : proj.category;
 
               return (
@@ -298,9 +299,9 @@ export const Portfolio: React.FC = () => {
         {/* Dynamic Project Details Modal Overlay */}
         <AnimatePresence>
           {selectedProject && (() => {
-            const displayTitleM = t(`data.projects.${selectedProject.id}.title`) || selectedProject.title;
-            const displaySubtitleM = t(`data.projects.${selectedProject.id}.subtitle`) || selectedProject.subtitle;
-            const displayDescM = t(`data.projects.${selectedProject.id}.description`) || selectedProject.description;
+            const displayTitleM = selectedProject.title || t(`data.projects.${selectedProject.id}.title`);
+            const displaySubtitleM = selectedProject.subtitle || t(`data.projects.${selectedProject.id}.subtitle`);
+            const displayDescM = selectedProject.description || t(`data.projects.${selectedProject.id}.description`);
             const categoryBadgeM = selectedProject.category === "IA" && isEn ? "AI" : selectedProject.category;
 
             return (
@@ -378,20 +379,7 @@ export const Portfolio: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Sub text explanation */}
-                  <div className="space-y-3">
-                    <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest block font-bold">
-                      {isEn ? "Overview and results" : "Présentation et résultats"}
-                    </span>
-                    <p className="text-zinc-300 text-sm leading-relaxed">
-                      {displayDescM}
-                    </p>
-                    <p className="text-zinc-400 text-xs leading-relaxed font-sans">
-                      {isEn 
-                        ? "The product was successfully launched with top-tier network optimizations, specifically engineered to remain reliable and secure even in variable connectivity situations across Haiti."
-                        : "Le produit a été propulsé avec d'excellentes optimisations réseau, spécifiquement conçues pour rester performant et sécurisé dans les configurations à connectivité variable d'Haïti (friendly Digicel & Natcom)."}
-                    </p>
-                  </div>
+
 
                   {/* Metadata details line */}
                   <div className="border-t border-zinc-900 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-zinc-500">
@@ -407,13 +395,16 @@ export const Portfolio: React.FC = () => {
 
                   {/* Action button in the modal */}
                   <div className="pt-2 flex justify-end">
-                    <button
+                    <a
+                      href={selectedProject.actionUrl || "https://haitiandev.org"}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={() => setSelectedProject(null)}
                       className="w-full sm:w-auto px-8 py-3 rounded-full text-center text-xs font-bold uppercase tracking-widest bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.4)] text-white transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <span>{isEn ? "Access project" : "Accéder au projet"}</span>
                       <ChevronRight className="w-4 h-4" />
-                    </button>
+                    </a>
                   </div>
 
                 </motion.div>

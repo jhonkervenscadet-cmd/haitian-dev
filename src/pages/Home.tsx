@@ -204,7 +204,8 @@ export const Home: React.FC = () => {
         { label: "Sécurité", value: "Optimisé" }
       ],
       client: p.client || original?.client || "Haitian D.E.V.",
-      year: p.year || original?.year || "2025"
+      year: p.year || original?.year || "2025",
+      actionUrl: p.actionUrl || original?.actionUrl || "https://haitiandev.org"
     };
   };
 
@@ -218,16 +219,19 @@ export const Home: React.FC = () => {
   return (
     <div className="relative">
       <SEO
-        title={isEn ? "Haitian D.E.V. — Elite Web, Mobile & AI Studio in Haiti" : "Haitian D.E.V. — Agence Tech & Intelligence Artificielle Haïti"}
+        title={isEn ? "Haitian D.E.V. — Elite Web, Mobile & AI Agency in Delmas, Haiti" : "Haitian D.E.V. — Agence Digitale & Intelligence Artificielle à Delmas, Haïti"}
         description={isEn 
-          ? "Haitian D.E.V. connects Haiti to elite technology. Premium web/mobile apps, custom AI integration, software engineering training & digital transformation." 
-          : "Haitian D.E.V. propulse Haïti vers l'élite technologique. Applications web/mobiles sur-mesure, intégration d'IA, et de formations d'excellence en ingénierie logicielle."}
+          ? "Haitian D.E.V. is a premier digital agency based in Delmas, Haiti, connecting local businesses to elite tech: custom web/mobile apps, AI integrations, and professional training." 
+          : "Haitian D.E.V. est une agence digitale d'élite basée à Delmas, Haïti. Conception d'applications web/mobiles sur-mesure, intégration d'intelligence artificielle et formations de haut niveau."}
         schema={getOrganizationSchema()}
         keywords={[
           "HaitianDev",
           "Haitian D.E.V.",
-          "développement web Haïti",
+          "agence digitale Delmas",
+          "développement web Delmas",
+          "création site internet Delmas",
           "agence digitale Haïti",
+          "développement web Haïti",
           "création site internet Haïti",
           "intelligence artificielle Haïti",
           "formation programmation Haïti",
@@ -275,9 +279,9 @@ export const Home: React.FC = () => {
                 {isEn ? "No active projects displayed currently." : "Aucun projet actif affiché pour le moment."}
               </div>
             ) : homeProjects.map((proj, idx) => {
-              const displayTitle = t(`data.projects.${proj.id}.title`) || proj.title;
-              const displaySubtitle = t(`data.projects.${proj.id}.subtitle`) || proj.subtitle;
-              const displayDesc = t(`data.projects.${proj.id}.description`) || proj.description;
+              const displayTitle = proj.title || t(`data.projects.${proj.id}.title`);
+              const displaySubtitle = proj.subtitle || t(`data.projects.${proj.id}.subtitle`);
+              const displayDesc = proj.description || t(`data.projects.${proj.id}.description`);
 
               return (
                 <motion.div
@@ -371,9 +375,9 @@ export const Home: React.FC = () => {
         {/* Dynamic Project Details Modal Overlay */}
         <AnimatePresence>
           {selectedProject && (() => {
-            const displayModalTitle = t(`data.projects.${selectedProject.id}.title`) || selectedProject.title;
-            const displayModalSubtitle = t(`data.projects.${selectedProject.id}.subtitle`) || selectedProject.subtitle;
-            const displayModalDesc = t(`data.projects.${selectedProject.id}.description`) || selectedProject.description;
+            const displayModalTitle = selectedProject.title || t(`data.projects.${selectedProject.id}.title`);
+            const displayModalSubtitle = selectedProject.subtitle || t(`data.projects.${selectedProject.id}.subtitle`);
+            const displayModalDesc = selectedProject.description || t(`data.projects.${selectedProject.id}.description`);
 
             return (
               <div 
@@ -450,20 +454,7 @@ export const Home: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Details description */}
-                  <div className="space-y-3 font-sans">
-                    <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest block font-bold">
-                      {isEn ? "Overview and results" : "Présentation et résultats"}
-                    </span>
-                    <p className="text-zinc-300 text-sm leading-relaxed">
-                      {displayModalDesc}
-                    </p>
-                    <p className="text-zinc-400 text-xs leading-relaxed">
-                      {isEn 
-                        ? "The product was successfully launched with top-tier network optimizations, specifically engineered to remain reliable and secure even in variable connectivity situations across Haiti."
-                        : "Le produit a été propulsé avec d'excellentes optimisations réseau, spécifiquement conçues pour rester performant et sécurisé dans les configurations à connectivité variable d'Haïti (friendly Digicel & Natcom)."}
-                    </p>
-                  </div>
+
 
                   {/* Client info and status badge */}
                   <div className="border-t border-zinc-900 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-zinc-500">
@@ -479,15 +470,16 @@ export const Home: React.FC = () => {
 
                   {/* Modal Action Button */}
                   <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => {
-                        setSelectedProject(null);
-                      }}
+                    <a
+                      href={selectedProject.actionUrl || "https://haitiandev.org"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setSelectedProject(null)}
                       className="w-full sm:w-auto px-8 py-3 rounded-full text-center text-xs font-bold uppercase tracking-widest bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.4)] text-white transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <span>{isEn ? "Access project" : "Accéder au projet"}</span>
                       <ChevronRight className="w-4 h-4" />
-                    </button>
+                    </a>
                   </div>
 
                 </motion.div>
