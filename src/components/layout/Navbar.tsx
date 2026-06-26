@@ -103,8 +103,8 @@ export const Navbar: React.FC = () => {
     <header 
       className={`fixed top-0 left-0 right-0 w-full z-[100] flex flex-col transition-all duration-300 ${
         scrollY > 20 
-          ? "bg-[#050508]/80 backdrop-blur-md shadow-lg shadow-black/20 border-b border-white/10"
-          : "bg-transparent border-b border-transparent"
+          ? "bg-[#050508] lg:bg-[#050508]/80 lg:backdrop-blur-md shadow-lg shadow-black/20 border-b border-white/10"
+          : "bg-[#050508] lg:bg-transparent border-b border-white/5 lg:border-transparent"
       }`}
     >
       <BannerRenderer position="above_navbar" />
@@ -128,6 +128,7 @@ export const Navbar: React.FC = () => {
                 const hasActiveSublink = 
                   location.pathname === "/portfolio" || 
                   location.pathname === "/process" || 
+                  location.pathname === "/partners" || 
                   location.pathname === "/about-us";
 
                 return (
@@ -162,6 +163,7 @@ export const Navbar: React.FC = () => {
                             {[
                               { label: t("navbar.portfolio"), path: "/portfolio" },
                               { label: t("navbar.processus"), path: "/process" },
+                              { label: t("navbar.partners"), path: "/partners" },
                               { label: t("navbar.about"), path: "/about-us" }
                             ].map((subOption) => {
                               const isSubActive = location.pathname === subOption.path;
@@ -461,6 +463,7 @@ export const Navbar: React.FC = () => {
                         const hasActiveSublink = 
                           location.pathname === "/portfolio" || 
                           location.pathname === "/process" || 
+                          location.pathname === "/partners" || 
                           location.pathname === "/about-us";
 
                         return (
@@ -489,6 +492,7 @@ export const Navbar: React.FC = () => {
                                   {[
                                     { label: t("navbar.portfolio"), path: "/portfolio" },
                                     { label: t("navbar.processus"), path: "/process" },
+                                    { label: t("navbar.partners"), path: "/partners" },
                                     { label: t("navbar.about"), path: "/about-us" }
                                   ].map((subOption) => {
                                     const isSubActive = location.pathname === subOption.path;

@@ -213,6 +213,22 @@
         "dbUri": { "type": "string" }
       },
       "required": ["id", "clientName", "projectName", "clientEmail", "adminLink", "username", "password"]
+    },
+    "partnerRequest": {
+      "title": "PartnerRequest",
+      "description": "Enterprise and business collaboration partnership proposals",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyName": { "type": "string" },
+        "contactName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "companyName", "contactName", "email", "message"]
     }
   },
   "firestore": {
@@ -267,6 +283,10 @@
     "docs": {
       "schema": "doc",
       "description": "Technical instruction guides"
+    },
+    "partner_requests": {
+      "schema": "partnerRequest",
+      "description": "Enterprise and business collaboration partnership proposals"
     }
   }
 }

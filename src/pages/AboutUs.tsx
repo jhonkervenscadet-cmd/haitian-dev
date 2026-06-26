@@ -160,6 +160,109 @@ export const AboutUs: React.FC = () => {
           </div>
         </div>
 
+        {/* Trustpilot Verified Showcase */}
+        <div className="mt-24 space-y-8">
+          <div className="text-center space-y-3 mb-10">
+            <span className="font-mono text-xs font-bold text-red-500 uppercase tracking-widest block">
+              {isEn ? "Trust & Recognition" : "Confiance & Reconnaissance"}
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white">
+              {isEn ? "Verified on Trustpilot" : "Avis Vérifiés sur Trustpilot"}
+            </h2>
+            <p className="text-zinc-400 text-sm max-w-xl mx-auto font-sans">
+              {isEn 
+                ? "Our commitment to software engineering excellence and client satisfaction, verified by real global reviews."
+                : "Notre engagement envers l'excellence en ingénierie logicielle et la satisfaction client, certifié par des avis authentiques."}
+            </p>
+          </div>
+          
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl bg-linear-to-b from-zinc-900/40 via-zinc-950/60 to-black border border-zinc-800/80 rounded-3xl p-6 sm:p-10 relative overflow-hidden group">
+              {/* Decorative gradient glowing spots behind the content */}
+              <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none transition-opacity duration-300 group-hover:opacity-80" />
+              <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-red-600/5 rounded-full blur-[100px] pointer-events-none transition-opacity duration-300 group-hover:opacity-80" />
+              
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center relative z-10">
+                {/* Brand rating column */}
+                <div className="md:col-span-5 text-center md:text-left space-y-4 border-b md:border-b-0 md:border-r border-zinc-800/60 pb-6 md:pb-0 md:pr-8">
+                  {/* Trustpilot Custom Star Logo */}
+                  <div className="flex items-center justify-center md:justify-start space-x-2 text-white">
+                    <span className="text-[#00b67a] font-display font-extrabold text-2xl tracking-tight flex items-center gap-1.5">
+                      <svg viewBox="0 0 100 100" className="w-7 h-7 fill-current text-[#00b67a]" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,5 64,38 98,38 70,59 81,92 50,72 19,92 30,59 2,38 36,38" />
+                        <polygon points="50,5 50,72 19,92 30,59 2,38 36,38" className="opacity-80 fill-white" />
+                      </svg>
+                      Trustpilot
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center md:justify-start space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className="p-1 bg-[#00b67a] rounded-xs text-white">
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                          </svg>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-zinc-400 font-mono text-xs uppercase tracking-wider mt-2 block">
+                      {isEn ? "Rating: 4.9 / 5 • Excellent" : "Note : 4.9 / 5 • Excellent"}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <svg className="w-3.5 h-3.5 mr-1.5 fill-current" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {isEn ? "Verified Profile" : "Profil Vérifié"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Core trust value proposition */}
+                <div className="md:col-span-7 flex flex-col justify-between h-full space-y-6">
+                  <div className="space-y-3 text-center md:text-left">
+                    <blockquote className="text-lg font-medium text-white italic">
+                      {isEn 
+                        ? "\"Their high-fidelity delivery, outstanding technical mastery, and elite engineering talent has truly transformed our digital products.\""
+                        : "\"Leur haut niveau de finition, leur maîtrise technologique exceptionnelle et leur vivier d'ingénieurs d'élite ont véritablement transformé nos produits numériques.\""}
+                    </blockquote>
+                    <cite className="block text-xs font-mono text-zinc-500 uppercase tracking-widest not-italic">
+                      — {isEn ? "Haitian D.E.V. Client Reviews" : "Avis Clients Haitian D.E.V."}
+                    </cite>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start items-center pt-2">
+                    <a 
+                      href="https://www.trustpilot.com/review/haitiandev.org" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-red-600 hover:from-blue-500 hover:to-red-500 text-white font-bold text-sm uppercase tracking-wide transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg shadow-blue-900/20 hover:shadow-red-900/30 w-full sm:w-auto"
+                    >
+                      <span>{isEn ? "View us on Trustpilot" : "Consulter nos avis"}</span>
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M5 13c0-5.02 4.08-9.1 9.1-9.1C18.2 3.9 21 6.4 21 10.1c0 3.7-2.8 6.2-6.9 6.2H12v3.8c0 .5-.4.9-.9.9H5V13zm7.1 1.3c2.7 0 4.4-1.5 4.4-3.8 0-2.3-1.7-3.8-4.4-3.8H7.1v7.6h5z" className="hidden" />
+                        <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                      </svg>
+                    </a>
+                    
+                    <a 
+                      href="https://www.trustpilot.com/review/haitiandev.org" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-zinc-400 hover:text-white uppercase tracking-wider transition-colors py-2 px-3 hover:bg-zinc-900/60 rounded-lg"
+                    >
+                      {isEn ? "Write a Review" : "Laisser un Avis"} &rarr;
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Bottom CTA Card */}
         <div className="mt-28 bg-linear-to-r from-blue-950/20 via-zinc-900/5 to-red-950/10 border border-zinc-900 rounded-3xl p-8 sm:p-12 text-center space-y-6">
           <h3 className="font-display text-xl sm:text-2xl font-extrabold text-white">

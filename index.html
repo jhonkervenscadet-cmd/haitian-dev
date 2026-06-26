@@ -7,13 +7,30 @@
     <meta name="description" content="Développement Web, Applications Mobiles et Solutions d'Intelligence Artificielle en Haïti." />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#09090b" />
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/xT9tmPsn/haitiandev-(1).png" />
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png" />
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png" />
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
-            .catch((err) => console.error('Service Worker registration failed:', err));
+          const isDev = window.location.hostname === 'localhost' || 
+                        window.location.hostname.includes('127.0.0.1') || 
+                        window.location.hostname.includes('-dev-');
+          if (isDev) {
+            // Unregister any active service worker in development to avoid cache conflicts
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+              for (let registration of registrations) {
+                registration.unregister();
+              }
+            });
+            console.log('Service Worker disabled/unregistered in development mode.');
+          } else {
+            navigator.serviceWorker.register('/sw.js')
+              .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+              .catch((err) => console.error('Service Worker registration failed:', err));
+          }
         });
       }
     </script>

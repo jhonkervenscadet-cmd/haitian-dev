@@ -79,8 +79,18 @@ service cloud.firestore {
     // Devis: Everyone can submit. Only Admins or the owning client (matching email) can view their quote requests.
     match /devis/{requestId} {
       allow create: if true;
-      allow read: if isAdmin() || (isAuthenticated() && (resource.data.email == request.auth.token.email || resource.data.clientEmail == request.auth.token.email));
-      allow write, update, delete: if isAdmin();
+      allow read: if (isAuthenticated() && (
+        request.auth.token.email == 'devhaitian@gmail.com' ||
+        request.auth.token.email == 'contact@haitiandev.org' ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.com')) ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org'))
+      )) || isAdmin() || (isAuthenticated() && (resource.data.email == request.auth.token.email || resource.data.clientEmail == request.auth.token.email));
+      allow update, delete: if (isAuthenticated() && (
+        request.auth.token.email == 'devhaitian@gmail.com' ||
+        request.auth.token.email == 'contact@haitiandev.org' ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.com')) ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org'))
+      )) || isAdmin();
     }
     
     // User Profiles: Users can read/write their own profiles, Admins can do everything
@@ -143,6 +153,17 @@ service cloud.firestore {
       allow list: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
+    }
+
+    // Demandes de partenariats (Partnership requests)
+    match /partner_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if (isAuthenticated() && (
+        request.auth.token.email == 'devhaitian@gmail.com' ||
+        request.auth.token.email == 'contact@haitiandev.org' ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.com')) ||
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org'))
+      )) || isAdmin();
     }
   }
 }

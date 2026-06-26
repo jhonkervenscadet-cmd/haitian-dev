@@ -3,8 +3,7 @@ const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  'https://i.postimg.cc/xT9tmPsn/haitiandev-(1).png',
-  'https://i.postimg.cc/MTCfPytf/haitiandev.png'
+  'https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png'
 ];
 
 // Install Event

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Globe, Hexagon, Triangle, Box, Circle, Target, Layers, Activity, Users, Star, Shield, Zap, Sparkles, Building, Rocket, Code2, Cloud } from 'lucide-react';
+import { motion } from 'motion/react';
 import { SectionHeading } from '../ui/SectionHeading';
 import { loadCollection, subscribeToCollection } from "../../utils/firebaseSync";
 
@@ -84,41 +85,56 @@ export const Partners: React.FC = () => {
         <div className="relative w-full rounded-2xl bg-gradient-to-r from-[#00209F] to-[#D21034] p-[1px] group">
           <div className="relative w-full rounded-2xl bg-slate-950 sm:bg-slate-900/80 backdrop-blur-md p-8 md:p-12 overflow-hidden">
             
-            {/* Centered Wrap of Unique Logos */}
-            <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 md:gap-x-16 md:gap-y-10">
-              {uniquePartners.map((partner: any) => {
-                const Icon = ICONS_MAP[partner.icon] || Globe;
-                const Element = partner.websiteUrl ? 'a' : 'div';
-                const extraProps = partner.websiteUrl ? {
-                  href: partner.websiteUrl,
-                  target: "_blank",
-                  rel: "noopener noreferrer"
-                } : {};
-                
-                return (
-                  <Element 
-                    key={`partner-${partner.id}`}
-                    className="flex items-center justify-center grayscale opacity-65 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer"
-                    {...extraProps}
-                  >
-                    {partner.logoUrl ? (
-                      <img 
-                        src={partner.logoUrl} 
-                        alt={partner.name} 
-                        referrerPolicy="no-referrer"
-                        className="h-8 max-w-[110px] object-contain mr-2.5 filter brightness-100"
-                        onError={(e) => {
-                          // If load fails, hide image and show standard backup icon
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <Icon className={`w-7 h-7 mr-2.5 ${partner.color || 'text-[#00209F]'}`} />
-                    )}
-                    <span className="font-display font-semibold text-lg md:text-xl tracking-wide text-white">{partner.name}</span>
-                  </Element>
-                );
-              })}
+            {/* Gradient Fades for Infinite Scrolling */}
+            <div className="pointer-events-none absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-slate-950 to-transparent z-10" />
+            <div className="pointer-events-none absolute top-0 bottom-0 right-0 w-16 bg-gradient-to-l from-slate-950 to-transparent z-10" />
+
+            {/* Infinite Marquee of Unique Logos */}
+            <div className="w-full overflow-hidden py-2 relative">
+              <motion.div 
+                className="flex items-center gap-12 md:gap-16 w-max"
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{
+                  ease: "linear",
+                  duration: 25,
+                  repeat: Infinity,
+                }}
+              >
+                {/* Render unique partners quadrupled to ensure perfect infinite seamless looping across all screens */}
+                {[...uniquePartners, ...uniquePartners, ...uniquePartners, ...uniquePartners].map((partner: any, idx: number) => {
+                  const Icon = ICONS_MAP[partner.icon] || Globe;
+                  const Element = partner.websiteUrl ? 'a' : 'div';
+                  const extraProps = partner.websiteUrl ? {
+                    href: partner.websiteUrl,
+                    target: "_blank",
+                    rel: "noopener noreferrer"
+                  } : {};
+                  
+                  return (
+                    <Element 
+                      key={`partner-${partner.id}-${idx}`}
+                      className="flex items-center justify-center grayscale opacity-65 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer shrink-0"
+                      {...extraProps}
+                    >
+                      {partner.logoUrl ? (
+                        <img 
+                          src={partner.logoUrl} 
+                          alt={partner.name} 
+                          referrerPolicy="no-referrer"
+                          className="h-8 max-w-[110px] object-contain mr-2.5 filter brightness-100"
+                          onError={(e) => {
+                            // If load fails, hide image and show standard backup icon
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <Icon className={`w-7 h-7 mr-2.5 ${partner.color || 'text-[#00209F]'}`} />
+                      )}
+                      <span className="font-display font-semibold text-lg md:text-xl tracking-wide text-white">{partner.name}</span>
+                    </Element>
+                  );
+                })}
+              </motion.div>
             </div>
 
           </div>

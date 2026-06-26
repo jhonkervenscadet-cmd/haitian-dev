@@ -76,56 +76,7 @@ interface QuoteBrief {
   createdAt: string;
 }
 
-const initialDevis: QuoteBrief[] = [
-  {
-    id: "devis-1",
-    clientName: "Jean-Maxime Auguste",
-    email: "jm.auguste@societegenerale.ht",
-    company: "Société Générale S.A.",
-    specs: "Landing Page Corporate d'élite, E-commerce avec checkout MonCash, Système multilingue (Kreyòl, FR, EN)",
-    estimatedBudget: "2k-5k",
-    desiredDeadline: "medium",
-    serviceType: "Web Design & Site Vitrine",
-    status: "Nouveau / En attente",
-    createdAt: "2026-06-05T10:00:00Z"
-  },
-  {
-    id: "devis-2",
-    clientName: "Marie-Ketsia François",
-    email: "ketsia@trans-cargo.com",
-    company: "François & Fils Transport",
-    specs: "Application iOS & Android multiplateforme, Mode offline-first avec synchronisation locale, Système de notifications push SMS",
-    estimatedBudget: "5k-15k",
-    desiredDeadline: "fast",
-    serviceType: "Mobile App Development",
-    status: "Analyse en cours",
-    createdAt: "2026-06-03T14:30:00Z"
-  },
-  {
-    id: "devis-3",
-    clientName: "Pierre-Richard Celestin",
-    email: "pr.celestin@universitelafayette.edu",
-    company: "Université Lafayette d'Haïti",
-    specs: "Transcription audio-vers-texte en créole, Bot conversationnel d'IA avec reconnaissance de la voix",
-    estimatedBudget: "5k-15k",
-    desiredDeadline: "extended",
-    serviceType: "IA & Business Automation",
-    status: "Accepté / Validé",
-    createdAt: "2026-06-01T09:15:00Z"
-  },
-  {
-    id: "devis-4",
-    clientName: "Dr. Frantz Jean-Baptiste",
-    email: "f.jeanbaptiste@hopilaksyon.org",
-    company: "Hôpital de l'Action",
-    specs: "Bonjour, nous aurions besoin d'un audit de sécurité complet sur nos infrastructures serveurs locales situées à Delmas 83. Merci.",
-    estimatedBudget: "Non spécifié",
-    desiredDeadline: "Asap",
-    serviceType: "Audit & Sécurité IT",
-    status: "Nouveau / En attente",
-    createdAt: "2026-06-08T11:45:00Z"
-  }
-];
+const initialDevis: QuoteBrief[] = [];
 
 interface Project {
   id: string;
@@ -391,7 +342,7 @@ export const AdminPanel: React.FC = () => {
   };
 
   // Navigation Sidebar states
-  const [activeTab, setActiveTab] = useState<"content" | "accounts" | "devis" | "popups" | "messages" | "profile" | "stats" | "credentials" | "billing">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "accounts" | "devis" | "popups" | "messages" | "profile" | "stats" | "credentials" | "billing" | "partnerships">("content");
   const [isLiveEditing, setIsLiveEditing] = useState(false);
   const [contentSubTab, setContentSubTab] = useState<"projects" | "testimonials" | "formations" | "education" | "partners" | "landingStats">("projects");
   const [eduTab, setEduTab] = useState<"formation" | "blog" | "doc">("formation");
@@ -798,6 +749,11 @@ export const AdminPanel: React.FC = () => {
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [devisList, setDevisList] = useState<QuoteBrief[]>(initialDevis);
 
+  // Partnership requests state
+  const [partnerRequests, setPartnerRequests] = useState<any[]>([]);
+  const [partnershipsSubTab, setPartnershipsSubTab] = useState<"Tous" | "Nouveau" | "En cours" | "Accepté" | "Refusé">("Tous");
+  const [partnershipsSearchQuery, setPartnershipsSearchQuery] = useState("");
+
   // Message composing state
   const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState<UserAccount | null>(null);
@@ -900,6 +856,35 @@ export const AdminPanel: React.FC = () => {
     const updated = { ...quote, status: nextStatus };
     const result = await saveCollectionItem("devis", "haitian_dev_devis_local", updated, devisList);
     setDevisList(result);
+  };
+
+  // Sync partner requests from Firestore
+  useEffect(() => {
+    const initPartnerRequests = async () => {
+      const data = await loadCollection<any>("partner_requests", "haitiandev_partner_requests", []);
+      setPartnerRequests(data);
+    };
+    initPartnerRequests();
+
+    const unsubscribe = subscribeToCollection<any>("partner_requests", "haitiandev_partner_requests", (data) => {
+      setPartnerRequests(data);
+    }, []);
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleChangePartnerRequestStatus = async (id: string, nextStatus: string) => {
+    const req = partnerRequests.find(r => r.id === id);
+    if (!req) return;
+    const updated = { ...req, status: nextStatus };
+    const result = await saveCollectionItem("partner_requests", "haitiandev_partner_requests", updated, partnerRequests);
+    setPartnerRequests(result);
+  };
+
+  const handleDeletePartnerRequest = async (id: string) => {
+    if (!safeConfirm("Êtes-vous sûr de vouloir supprimer cette demande de partenariat ?")) return;
+    const result = await deleteCollectionItem("partner_requests", "haitiandev_partner_requests", id, partnerRequests);
+    setPartnerRequests(result);
   };
 
   const handleDeleteDevis = (id: string) => {
@@ -1802,6 +1787,18 @@ export const AdminPanel: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab("partnerships")}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                activeTab === "partnerships"
+                  ? "bg-gradient-to-r from-[#00209F]/25 to-[#D21034]/25 border border-white/10 text-white shadow-lg"
+                  : "text-zinc-400 hover:text-white hover:bg-slate-900/40 border border-transparent"
+              }`}
+            >
+              <Briefcase className="w-4 h-4 text-orange-500" />
+              <span>Partenariats [{partnerRequests.filter(r => r.status === "Nouveau").length}]</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab("popups")}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                 activeTab === "popups"
@@ -1929,6 +1926,16 @@ export const AdminPanel: React.FC = () => {
           }`}
         >
           Devis ({devisList.filter(d => d.status === "Nouveau").length})
+        </button>
+        <button
+          onClick={() => setActiveTab("partnerships")}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === "partnerships"
+              ? "bg-gradient-to-r from-[#00209F] to-[#D21034] text-white"
+              : "bg-slate-900 border border-slate-800 text-zinc-400"
+          }`}
+        >
+          Partenariats ({partnerRequests.filter(r => r.status === "Nouveau").length})
         </button>
         <button
           onClick={() => setActiveTab("popups")}
@@ -4264,6 +4271,219 @@ export const AdminPanel: React.FC = () => {
                   <p className="text-[10px] text-zinc-500 mt-2.5 leading-relaxed font-sans">Besoins clients qualifiés reçus depuis le simulateur.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- SECTION: PARTNERSHIPS MANAGEMENT ---------------- */}
+        {activeTab === "partnerships" && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header Card */}
+            <div className="p-6 rounded-3xl border border-slate-900 bg-slate-900/10 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-display font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#00209F] to-[#D21034] uppercase">
+                  Demandes de Partenariat
+                </h3>
+                <p className="text-xs text-zinc-500 font-sans mt-1">
+                  Gérez les propositions de collaboration et de partenariat soumises depuis la page Partenaires.
+                </p>
+              </div>
+              <div className="text-xs font-mono text-zinc-400 bg-slate-950 border border-slate-900 px-3.5 py-1.5 rounded-full shrink-0 self-start md:self-auto">
+                Total : <span className="font-bold text-white">{partnerRequests.length}</span> demandes
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="bg-slate-900/20 backdrop-blur-xl border border-slate-900 p-4 rounded-3xl flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 shadow-xl">
+              {/* Status Filter Tabs */}
+              <div className="flex flex-wrap gap-1.5">
+                {(["Tous", "Nouveau", "En cours", "Accepté", "Refusé"] as const).map((tab) => {
+                  const count = tab === "Tous" 
+                    ? partnerRequests.length 
+                    : partnerRequests.filter(r => r.status === tab).length;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setPartnershipsSubTab(tab)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                        partnershipsSubTab === tab
+                          ? "bg-gradient-to-r from-[#00209F] to-[#D21034] text-white shadow-md font-bold"
+                          : "text-zinc-400 hover:text-white hover:bg-slate-900/40"
+                      }`}
+                    >
+                      {tab} {count > 0 && `(${count})`}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search Field */}
+              <div className="relative flex-1 max-w-md w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par entreprise, contact, email..."
+                  value={partnershipsSearchQuery}
+                  onChange={(e) => setPartnershipsSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-900/80 focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50 text-xs font-mono text-white placeholder-zinc-550 transition-all"
+                />
+                {partnershipsSearchQuery && (
+                  <button
+                    onClick={() => setPartnershipsSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-slate-900 text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* List entries for current subtab */}
+            <div className="space-y-4">
+              {(() => {
+                const filtered = partnerRequests.filter(r => {
+                  // Status check
+                  if (partnershipsSubTab !== "Tous") {
+                    if (r.status !== partnershipsSubTab) return false;
+                  }
+
+                  // Search query check
+                  if (partnershipsSearchQuery.trim()) {
+                    const q = partnershipsSearchQuery.toLowerCase();
+                    const company = (r.companyName || "").toLowerCase();
+                    const contact = (r.contactName || "").toLowerCase();
+                    const email = (r.email || "").toLowerCase();
+                    const phone = (r.phone || "").toLowerCase();
+                    const message = (r.message || "").toLowerCase();
+
+                    return company.includes(q) || contact.includes(q) || email.includes(q) || phone.includes(q) || message.includes(q);
+                  }
+
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-12 text-center text-zinc-500 border border-slate-900 bg-slate-900/10 rounded-2xl font-mono text-sm leading-relaxed">
+                      Aucune demande de partenariat trouvée pour cette sélection.
+                    </div>
+                  );
+                }
+
+                return filtered.map((r) => (
+                  <div
+                    key={r.id}
+                    className="p-6 rounded-2xl border border-slate-900 bg-slate-900/20 backdrop-blur-xl flex flex-col xl:flex-row xl:items-start justify-between gap-6 hover:bg-slate-900/30 transition-all duration-300"
+                  >
+                    {/* Header info: company & message */}
+                    <div className="space-y-4 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-mono text-zinc-500">
+                          ID: partner_{r.id.slice(-6)} • Reçu le {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A'}
+                        </span>
+                        
+                        {/* Status badge */}
+                        <div className="ml-auto xl:ml-2">
+                          <span className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest ${
+                            r.status === "Nouveau" || !r.status ? "bg-red-950 border border-red-800 text-red-400" :
+                            r.status === "En cours" ? "bg-amber-950 border border-amber-800 text-amber-400" :
+                            r.status === "Accepté" ? "bg-emerald-950 border border-emerald-800 text-emerald-400" :
+                            "bg-zinc-900 border border-zinc-700 text-zinc-400"
+                          }`}>
+                            {(r.status === "Nouveau" || !r.status) && <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />}
+                            <span>{r.status || "Nouveau"}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Contact metadata row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-950/40 p-4 rounded-xl border border-slate-900/50">
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Entreprise / Nom</p>
+                          <p className="text-white font-bold text-xs mt-0.5 truncate">{r.companyName}</p>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Contact</p>
+                          <p className="text-zinc-355 font-semibold text-xs mt-0.5 truncate">{r.contactName}</p>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Email d'affaires</p>
+                          <a href={`mailto:${r.email}`} className="text-blue-400 hover:underline font-mono text-xs mt-0.5 block truncate" title="Envoyer un email">
+                            {r.email}
+                          </a>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Téléphone</p>
+                          <p className="text-zinc-300 font-mono text-xs mt-0.5 truncate">{r.phone || "Non spécifié"}</p>
+                        </div>
+                      </div>
+
+                      {/* Collaboration Presentation */}
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Présentation de la collaboration :</p>
+                        <div className="p-4 rounded-xl bg-slate-950 border border-slate-900 text-zinc-350 text-xs whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">
+                          {r.message}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions: status change & deletion */}
+                    <div className="xl:w-64 flex flex-col sm:flex-row xl:flex-col justify-end xl:justify-between sm:items-center xl:items-stretch border-t xl:border-t-0 xl:border-l border-slate-900 pt-4 xl:pt-0 xl:pl-6 shrink-0 gap-4">
+                      {/* Action trigger flows */}
+                      <div className="space-y-2.5 shrink-0 w-full">
+                        <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest mb-1 font-bold">Workflow Partenariat</p>
+                        
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {(["Nouveau", "En cours", "Accepté", "Refusé"] as const).map((st) => (
+                            <button
+                              key={st}
+                              onClick={() => handleChangePartnerRequestStatus(r.id, st)}
+                              disabled={r.status === st || (!r.status && st === "Nouveau")}
+                              className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all uppercase cursor-pointer text-center ${
+                                r.status === st || (!r.status && st === "Nouveau")
+                                  ? "bg-slate-900 border border-slate-800 text-white opacity-40 cursor-not-allowed"
+                                  : st === "Accepté"
+                                  ? "bg-emerald-950/25 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/40"
+                                  : st === "Refusé"
+                                  ? "bg-red-950/25 border border-red-500/20 text-red-400 hover:bg-red-950/40"
+                                  : st === "En cours"
+                                  ? "bg-amber-950/25 border border-amber-500/20 text-amber-400 hover:bg-amber-950/40"
+                                  : "bg-slate-950 border border-zinc-700 text-zinc-350 hover:bg-slate-900"
+                              }`}
+                            >
+                              {st}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => handleDeletePartnerRequest(r.id)}
+                          disabled={r.status !== "Accepté" && r.status !== "Refusé"}
+                          className={`w-full mt-2 py-2 border font-bold font-mono text-[10px] uppercase rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
+                            r.status === "Accepté" || r.status === "Refusé"
+                              ? "border-red-500/20 text-red-400 hover:bg-red-950/30 cursor-pointer"
+                              : "border-zinc-850 text-zinc-600 bg-slate-950/20 cursor-not-allowed opacity-40"
+                          }`}
+                          title={
+                            r.status === "Accepté" || r.status === "Refusé"
+                              ? "Supprimer définitivement"
+                              : "Vous devez d'abord Accepter ou Refuser la demande pour pouvoir la supprimer"
+                          }
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Supprimer la demande</span>
+                        </button>
+
+                        {r.status !== "Accepté" && r.status !== "Refusé" && (
+                          <p className="text-[9px] text-zinc-500 text-center font-sans mt-1 leading-normal">
+                            Veuillez marquer comme "Accepté" ou "Refusé" pour pouvoir supprimer
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
         )}

@@ -7,6 +7,7 @@ export const en = {
     portfolio: "Portfolio",
     processus: "Process",
     about: "About Us",
+    partners: "Partners",
     training: "Training",
     blog: "Blog",
     docs: "Docs",

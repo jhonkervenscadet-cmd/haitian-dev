@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { GraduationCap, Clock, Award, CheckCircle, ChevronDown, BookOpen, Send, UserCheck, X, User, Calendar, ExternalLink } from "lucide-react";
+import { GraduationCap, Clock, Award, CheckCircle, ChevronDown, BookOpen, Send, UserCheck, X, User, Calendar, ExternalLink, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { FormationItem } from "../data/staticData";
@@ -141,6 +141,40 @@ export const Training: React.FC = () => {
             <div className="w-10 h-10 border-4 border-t-red-500 border-r-transparent border-red-500/20 rounded-full animate-spin mx-auto mb-4" />
             <p className="text-zinc-500 font-mono text-xs">{isEn ? "LOADING PROGRAMS..." : "CHARGEMENT DES PROGRAMMES..."}</p>
           </div>
+        ) : formations.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16 bg-linear-to-b from-zinc-900/30 via-zinc-950/40 to-black border border-zinc-800/80 rounded-3xl p-8 sm:p-12 max-w-2xl mx-auto space-y-6 relative overflow-hidden shadow-2xl"
+          >
+            <div className="absolute top-0 left-1/4 w-48 h-48 bg-blue-600/5 rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-red-600/5 rounded-full blur-[60px] pointer-events-none" />
+            
+            <div className="p-4 bg-zinc-900/80 rounded-2xl w-fit mx-auto border border-zinc-800/80 text-red-500/80 relative z-10">
+              <GraduationCap className="w-10 h-10" />
+            </div>
+            
+            <div className="space-y-2 relative z-10">
+              <h3 className="font-display font-extrabold text-2xl text-white">
+                {isEn ? "No Bootcamps Scheduled" : "Aucun Bootcamp Programmé"}
+              </h3>
+              <p className="text-zinc-400 text-sm font-sans max-w-md mx-auto leading-relaxed">
+                {isEn 
+                  ? "We are currently curating new high-fidelity cohorts and certification tracks. Join our waiting list to stay informed."
+                  : "Nous concevons actuellement de nouvelles cohortes de haut niveau et des parcours certifiants. Rejoignez notre liste d'attente."}
+              </p>
+            </div>
+
+            <div className="pt-2 relative z-10">
+              <Link
+                to="/#contact"
+                className="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-red-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider transition-opacity"
+              >
+                <span>{isEn ? "Contact Admissions" : "Contacter l'Admission"}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </motion.div>
         ) : (
           /* Cursus listings */
           <div className="space-y-6">

@@ -47,12 +47,12 @@ export const Footer: React.FC = () => {
   return (
     <footer className="relative bg-[#0A0C10] border-t border-white/5 overflow-hidden pt-20 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-12 lg:gap-8">
           {/* Logo Brand Info */}
           <div className="lg:col-span-2 space-y-6">
             <Link to="/" className="flex items-center space-x-3 group">
               <img 
-                src="https://i.postimg.cc/xT9tmPsn/haitiandev-(1).png" 
+                src="https://i.postimg.cc/BtWHr8yk/haitiandev-(2).png" 
                 alt="Haitian D.E.V. Logo" 
                 className="w-9 h-9 object-contain rounded-lg drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)] group-hover:scale-105 transition-transform duration-200"
                 referrerPolicy="no-referrer"
@@ -107,26 +107,28 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Links columns */}
-          {sections.map((sec) => (
-            <div key={sec.title} className="flex flex-col space-y-4 transition-transform duration-300 hover:-translate-y-1.5">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-500">
-                {sec.title}
-              </h4>
-              <ul className="space-y-3">
-                {sec.links.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      to={link.path}
-                      className="group flex items-center text-sm text-zinc-400 hover:text-white transition-colors duration-200"
-                    >
-                      <span className="font-display">{link.name}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5 ml-1 opacity-0 -translate-y-0.5 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8">
+            {sections.map((sec) => (
+              <div key={sec.title} className="flex flex-col space-y-4 transition-transform duration-300 hover:-translate-y-1.5">
+                <h4 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-500">
+                  {sec.title}
+                </h4>
+                <ul className="space-y-3">
+                  {sec.links.map((link) => (
+                    <li key={link.name}>
+                      <Link
+                        to={link.path}
+                        className="group flex items-center text-sm text-zinc-400 hover:text-white transition-colors duration-200"
+                      >
+                        <span className="font-display">{link.name}</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 ml-1 opacity-0 -translate-y-0.5 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bottom copyright & tagline */}

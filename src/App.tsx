@@ -7,6 +7,7 @@ import { AnimatePresence } from "motion/react";
 // Lazy load route pages for faster initial load on slow connections
 const Home = React.lazy(() => import("./pages/Home").then(m => ({ default: m.Home })));
 const AboutUs = React.lazy(() => import("./pages/AboutUs").then(m => ({ default: m.AboutUs })));
+const PartnersPage = React.lazy(() => import("./pages/PartnersPage").then(m => ({ default: m.PartnersPage })));
 const Services = React.lazy(() => import("./pages/Services").then(m => ({ default: m.Services })));
 const WebService = React.lazy(() => import("./pages/WebService").then(m => ({ default: m.WebService })));
 const MobileService = React.lazy(() => import("./pages/MobileService").then(m => ({ default: m.MobileService })));
@@ -52,6 +53,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/partners" element={<PartnersPage />} />
             <Route path="/services" element={<Services />} />
             <Route path="/services/web-design" element={<WebService />} />
             <Route path="/services/app-dev" element={<MobileService />} />

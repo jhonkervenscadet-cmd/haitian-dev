@@ -82,6 +82,17 @@ export const Portfolio: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
 
+  useEffect(() => {
+    if (selectedProject) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedProject]);
+
   const [dbProjects, setDbProjects] = useState<any[]>([]);
 
   useEffect(() => {
@@ -209,7 +220,7 @@ export const Portfolio: React.FC = () => {
         {/* Projects Grid Container with Exit/Entry spacing */}
         <motion.div
           layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+          className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8"
         >
           <AnimatePresence mode="popLayout">
             {filteredProjects.length === 0 ? (
@@ -238,13 +249,13 @@ export const Portfolio: React.FC = () => {
                   className="cursor-pointer group relative"
                 >
                   {/* Custom Card Layout to avoid rotating outline animation & enforce asymmetric right colored line */}
-                  <div className="relative w-full h-full bg-black/40 backdrop-blur-xl rounded-3xl overflow-hidden border border-zinc-900/80 flex flex-col justify-between transition-all duration-300 hover:border-zinc-850 hover:shadow-[0_8px_30px_rgba(0,47,108,0.15)] pb-6">
+                  <div className="relative w-full h-full bg-black/40 backdrop-blur-xl rounded-2xl sm:rounded-3xl overflow-hidden border border-zinc-900/80 flex flex-col justify-between transition-all duration-300 hover:border-zinc-850 hover:shadow-[0_8px_30px_rgba(0,47,108,0.15)] pb-3 sm:pb-6">
                     
                     {/* Fixed Static Right Edge Line (Asymmetric, brand colored gradient) */}
-                    <div className="absolute right-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-[#002f6c] to-[#c8102e] z-30 rounded-r-3xl" />
+                    <div className="absolute right-0 top-0 bottom-0 w-[3px] sm:w-[4px] bg-gradient-to-b from-[#002f6c] to-[#c8102e] z-30 rounded-r-2xl sm:rounded-r-3xl" />
 
                     {/* Card Section Header with Integrated Graphic Image */}
-                    <div className="relative w-full h-44 sm:h-48 overflow-hidden rounded-t-3xl">
+                    <div className="relative w-full h-24 sm:h-48 overflow-hidden rounded-t-2xl sm:rounded-t-3xl">
                       <img 
                         src={proj.image && (proj.image.startsWith("http://") || proj.image.startsWith("https://")) ? proj.image : getProjectImage(proj.id)} 
                         alt={displayTitle} 
@@ -253,15 +264,15 @@ export const Portfolio: React.FC = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-black/20" />
                       
-                      {/* Floating category badge on Card Image */}
-                      <span className="absolute top-3 left-3 font-mono text-[9px] sm:text-xs font-bold text-blue-400 bg-zinc-950/80 backdrop-blur-sm border border-blue-900/40 px-2.5 py-0.5 rounded-full">
+                      {/* Floating category badge on Card Image - Hidden on mobile */}
+                      <span className="hidden sm:inline-block absolute top-3 left-3 font-mono text-[9px] sm:text-xs font-bold text-blue-400 bg-zinc-950/80 backdrop-blur-sm border border-blue-900/40 px-2.5 py-0.5 rounded-full">
                         {categoryBadge}
                       </span>
                     </div>
 
                     {/* Card Main text */}
-                    <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                      <div className="flex items-center justify-between">
+                    <div className="p-3 sm:p-6 space-y-1 sm:space-y-4">
+                      <div className="hidden sm:flex items-center justify-between">
                         <span className="font-mono text-[9px] sm:text-xs font-bold text-zinc-400">
                           [{proj.code}]
                         </span>
@@ -269,17 +280,17 @@ export const Portfolio: React.FC = () => {
                       </div>
 
                       <div className="space-y-1">
-                        <h3 className="font-display text-sm sm:text-lg font-bold text-white group-hover:text-blue-400 transition-colors leading-tight">
+                        <h3 className="font-display text-xs sm:text-lg font-bold text-white group-hover:text-blue-400 transition-colors leading-tight line-clamp-2">
                           {displayTitle}
                         </h3>
-                        <p className="text-[10px] sm:text-xs text-zinc-500 font-mono italic">{displaySubtitle}</p>
+                        <p className="hidden sm:block text-[10px] sm:text-xs text-zinc-500 font-mono italic">{displaySubtitle}</p>
                       </div>
 
-                      <p className="text-zinc-400 text-[11px] sm:text-xs leading-relaxed line-clamp-3 font-sans">{displayDesc}</p>
+                      <p className="hidden sm:block text-zinc-400 text-[11px] sm:text-xs leading-relaxed line-clamp-3 font-sans">{displayDesc}</p>
                     </div>
 
-                    {/* Highlights Footer Area */}
-                    <div className="px-4 sm:px-6 pt-3 mt-auto border-t border-zinc-900/50 flex items-center justify-between text-zinc-500 text-[10px] sm:text-xs">
+                    {/* Highlights Footer Area - Hidden on mobile */}
+                    <div className="hidden sm:flex px-4 sm:px-6 pt-3 mt-auto border-t border-zinc-900/50 items-center justify-between text-zinc-500 text-[10px] sm:text-xs">
                       <span className="font-mono truncate max-w-[140px]">
                         Client: <strong className="text-zinc-450 font-medium">{proj.client || "Consultant"}</strong>
                       </span>
@@ -306,7 +317,7 @@ export const Portfolio: React.FC = () => {
 
             return (
               <div 
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto"
                 onClick={() => setSelectedProject(null)}
               >
                 <motion.div
@@ -314,7 +325,7 @@ export const Portfolio: React.FC = () => {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 15 }}
                   transition={{ type: "spring", duration: 0.4 }}
-                  className="relative max-w-2xl w-full bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto"
+                  className="relative max-w-xl w-full bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden shadow-2xl p-5 sm:p-8 space-y-5 sm:space-y-6 max-h-[82vh] overflow-y-auto my-auto modal-scrollbar"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Close Button */}
@@ -327,7 +338,7 @@ export const Portfolio: React.FC = () => {
                   </button>
 
                   {/* Header Image within Modal */}
-                  <div className="relative w-full h-44 sm:h-60 overflow-hidden rounded-2xl">
+                  <div className="relative w-full h-32 sm:h-56 overflow-hidden rounded-2xl flex-shrink-0">
                     <img 
                       src={selectedProject.image && (selectedProject.image.startsWith("http://") || selectedProject.image.startsWith("https://")) ? selectedProject.image : getProjectImage(selectedProject.id)} 
                       alt={displayTitleM} 

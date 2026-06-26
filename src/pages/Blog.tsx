@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Clock, Calendar, ArrowLeft, ArrowRight, User2, MessageSquare, Send, ChevronRight, X, Share } from "lucide-react";
+import { Clock, Calendar, ArrowLeft, ArrowRight, User2, MessageSquare, Send, ChevronRight, X, Share, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { BLOG_DATA, BlogItem } from "../data/staticData";
 import { Card } from "../components/ui/Card";
@@ -318,50 +318,86 @@ Our engineering team compiled a custom training set of real-world dialogue, hist
               </div>
 
               {/* Blog listings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                {posts.map((post) => {
-                  const transP = getTranslatedBlogPost(post);
-                  return (
-                    <Card
-                      key={post.id}
-                      onClick={() => selectPost(post.slug)}
-                      variant="glass"
-                      className="cursor-pointer bg-slate-900/30 backdrop-blur-xl border border-white/10 hover:border-blue-500/30 p-8 flex flex-col justify-between rounded-3xl transition-all duration-300 shadow-2xl"
+              {posts.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-16 bg-linear-to-b from-zinc-900/30 via-zinc-950/40 to-black border border-zinc-800/80 rounded-3xl p-8 sm:p-12 max-w-2xl mx-auto space-y-6 relative overflow-hidden shadow-2xl"
+                >
+                  <div className="absolute top-0 left-1/4 w-48 h-48 bg-blue-600/5 rounded-full blur-[60px] pointer-events-none" />
+                  <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-red-600/5 rounded-full blur-[60px] pointer-events-none" />
+                  
+                  <div className="p-4 bg-zinc-900/80 rounded-2xl w-fit mx-auto border border-zinc-800/80 text-blue-500/80 relative z-10">
+                    <BookOpen className="w-10 h-10" />
+                  </div>
+                  
+                  <div className="space-y-2 relative z-10">
+                    <h3 className="font-display font-extrabold text-2xl text-white">
+                      {isEn ? "No Articles Published" : "Aucun Article Publié"}
+                    </h3>
+                    <p className="text-zinc-400 text-sm font-sans max-w-md mx-auto leading-relaxed">
+                      {isEn 
+                        ? "Our editorial team is busy crafting deep technical analyses and guides. Check back very soon."
+                        : "Notre équipe éditoriale prépare de nouvelles analyses techniques approfondies. Revenez très bientôt."}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 relative z-10">
+                    <Link
+                      to="/"
+                      className="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-red-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider transition-opacity"
                     >
-                      <div className="space-y-6">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                          <span className="text-blue-400 font-bold uppercase bg-blue-950/20 border border-blue-900/50 px-2.5 py-0.5 rounded">
-                            {transP.category}
-                          </span>
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{transP.date}</span>
+                      <span>{isEn ? "Go to Homepage" : "Retour à l'Accueil"}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                  {posts.map((post) => {
+                    const transP = getTranslatedBlogPost(post);
+                    return (
+                      <Card
+                        key={post.id}
+                        onClick={() => selectPost(post.slug)}
+                        variant="glass"
+                        className="cursor-pointer bg-slate-900/30 backdrop-blur-xl border border-white/10 hover:border-blue-500/30 p-8 flex flex-col justify-between rounded-3xl transition-all duration-300 shadow-2xl"
+                      >
+                        <div className="space-y-6">
+                          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                            <span className="text-blue-400 font-bold uppercase bg-blue-950/20 border border-blue-900/50 px-2.5 py-0.5 rounded">
+                              {transP.category}
+                            </span>
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{transP.date}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 text-left">
+                            <h3 className="font-display text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
+                              {transP.title}
+                            </h3>
+                            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed font-sans line-clamp-3">
+                              {transP.summary}
+                            </p>
                           </div>
                         </div>
 
-                        <div className="space-y-2 text-left">
-                          <h3 className="font-display text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-                            {transP.title}
-                          </h3>
-                          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed font-sans line-clamp-3">
-                            {transP.summary}
-                          </p>
+                        <div className="pt-6 border-t border-zinc-900/50 mt-6 flex items-center justify-between">
+                          <div className="flex items-center space-x-2 text-[11px] font-mono text-zinc-500">
+                            <span>{isEn ? `Min read: ${transP.readTime}` : `Temps de lecture : ${transP.readTime}`}</span>
+                          </div>
+                          <span className="text-xs font-mono font-bold text-blue-500 flex items-center space-x-1 hover:text-blue-400 transition-colors cursor-pointer">
+                            <span>{isEn ? "Read Article →" : "Lire l'article →"}</span>
+                          </span>
                         </div>
-                      </div>
 
-                      <div className="pt-6 border-t border-zinc-900/50 mt-6 flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-[11px] font-mono text-zinc-500">
-                          <span>{isEn ? `Min read: ${transP.readTime}` : `Temps de lecture : ${transP.readTime}`}</span>
-                        </div>
-                        <span className="text-xs font-mono font-bold text-blue-500 flex items-center space-x-1 hover:text-blue-400 transition-colors cursor-pointer">
-                          <span>{isEn ? "Read Article →" : "Lire l'article →"}</span>
-                        </span>
-                      </div>
-
-                    </Card>
-                  );
-                })}
-              </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
