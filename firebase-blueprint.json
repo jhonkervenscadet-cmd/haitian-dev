@@ -229,9 +229,27 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "companyName", "contactName", "email", "message"]
+    },
+    "galleryItem": {
+      "title": "GalleryItem",
+      "description": "Dynamic layout cells showcasing high-contrast digital prototypes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "color": { "type": "string" },
+        "aspect": { "type": "string" },
+        "desc": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "color", "aspect", "desc"]
     }
   },
   "firestore": {
+    "gallery": {
+      "schema": "galleryItem",
+      "description": "Dynamic design showcase items displayed in the gallery masonry grid"
+    },
     "acces_projets": {
       "schema": "projectAccess",
       "description": "Secure access keys and CMS endpoints of client projects"

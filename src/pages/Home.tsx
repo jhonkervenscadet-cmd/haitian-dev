@@ -205,7 +205,7 @@ export const Home: React.FC = () => {
       id: p.id ?? "",
       title: p.title ?? "",
       code: p.title?.replace(/[^a-zA-Z]/g, "").slice(0, 10).toUpperCase() || original?.code || "PROJ",
-      subtitle: p.shortDesc || original?.subtitle || "",
+      subtitle: original?.subtitle || "",
       category: p.category as any,
       description: p.shortDesc || original?.description || "",
       image: p.imageUrl || p.image || original?.image || "",
@@ -291,7 +291,8 @@ export const Home: React.FC = () => {
               </div>
             ) : homeProjects.map((proj, idx) => {
               const displayTitle = proj.title || t(`data.projects.${proj.id}.title`);
-              const displaySubtitle = proj.subtitle || t(`data.projects.${proj.id}.subtitle`);
+              const tSub = t(`data.projects.${proj.id}.subtitle`);
+              const displaySubtitle = proj.subtitle || (tSub.startsWith("data.projects") ? "" : tSub);
               const displayDesc = proj.description || t(`data.projects.${proj.id}.description`);
 
               return (
@@ -362,24 +363,22 @@ export const Home: React.FC = () => {
             })}
           </div>
 
-          {/* Action Buttons under the grid: "Accéder au store" (en dégradé) & "Voir tout le portfolio" */}
-          {!authLoading && !currentUser && (
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-16">
-              <Link to="/services">
-                <button className="px-8 py-3.5 rounded-full text-center text-xs sm:text-sm font-bold uppercase tracking-widest bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.4)] text-white transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer">
-                  <span>{isEn ? "Access the store" : "Accéder au store"}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </Link>
-              
-              <Link to="/portfolio">
-                <button className="px-8 py-3.5 rounded-full text-center text-xs sm:text-sm font-bold uppercase tracking-widest border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer">
-                  <span>{isEn ? "View all portfolio" : "Voir tout le portfolio"}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </Link>
-            </div>
-          )}
+          {/* Action Buttons under the grid: "Accéder au store" (en dégradé) & "Voir plus" (always visible to all users) */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12 sm:mt-16">
+            <Link to="/services">
+              <button className="px-8 py-3.5 rounded-full text-center text-xs sm:text-sm font-bold uppercase tracking-widest bg-gradient-to-r from-blue-500 to-red-500 hover:from-blue-600 hover:to-red-600 shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.4)] text-white transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer">
+                <span>{isEn ? "Access the store" : "Accéder au store"}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </Link>
+            
+            <Link to="/portfolio">
+              <button className="px-8 py-3.5 rounded-full text-center text-xs sm:text-sm font-bold uppercase tracking-widest border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-white transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer">
+                <span>{isEn ? "See more" : "Voir plus"}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </Link>
+          </div>
 
         </div>
 

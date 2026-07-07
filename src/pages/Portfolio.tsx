@@ -130,7 +130,7 @@ export const Portfolio: React.FC = () => {
       id: p.id ?? "",
       title: p.title ?? "",
       code: p.title?.replace(/[^a-zA-Z]/g, "").slice(0, 10).toUpperCase() || original?.code || "PROJ",
-      subtitle: p.shortDesc || original?.subtitle || "",
+      subtitle: original?.subtitle || "",
       category: p.category as any,
       description: p.shortDesc || original?.description || "",
       image: p.imageUrl || p.image || original?.image || "",
@@ -233,7 +233,8 @@ export const Portfolio: React.FC = () => {
               </motion.div>
             ) : filteredProjects.map((proj, idx) => {
               const displayTitle = proj.title || t(`data.projects.${proj.id}.title`);
-              const displaySubtitle = proj.subtitle || t(`data.projects.${proj.id}.subtitle`);
+              const tSub = t(`data.projects.${proj.id}.subtitle`);
+              const displaySubtitle = proj.subtitle || (tSub.startsWith("data.projects") ? "" : tSub);
               const displayDesc = proj.description || t(`data.projects.${proj.id}.description`);
               const categoryBadge = proj.category === "AI" && !isEn ? "IA" : proj.category;
 
@@ -311,7 +312,8 @@ export const Portfolio: React.FC = () => {
         <AnimatePresence>
           {selectedProject && (() => {
             const displayTitleM = selectedProject.title || t(`data.projects.${selectedProject.id}.title`);
-            const displaySubtitleM = selectedProject.subtitle || t(`data.projects.${selectedProject.id}.subtitle`);
+            const tSubM = t(`data.projects.${selectedProject.id}.subtitle`);
+            const displaySubtitleM = selectedProject.subtitle || (tSubM.startsWith("data.projects") ? "" : tSubM);
             const displayDescM = selectedProject.description || t(`data.projects.${selectedProject.id}.description`);
             const categoryBadgeM = selectedProject.category === "IA" && isEn ? "AI" : selectedProject.category;
 
@@ -367,8 +369,11 @@ export const Portfolio: React.FC = () => {
                     
                     <div className="space-y-1">
                       <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white leading-tight">{displayTitleM}</h2>
-                      <p className="text-sm text-zinc-400 font-mono italic">{displaySubtitleM}</p>
+                      {displaySubtitleM && <p className="text-sm text-zinc-400 font-mono italic">{displaySubtitleM}</p>}
                     </div>
+                    {displayDescM && (
+                      <p className="text-sm text-zinc-300 leading-relaxed font-sans">{displayDescM}</p>
+                    )}
                   </div>
 
                   {/* Technical Performance statistics panel */}

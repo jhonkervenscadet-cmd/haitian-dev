@@ -20,6 +20,7 @@ import {
   AlertCircle,
   HelpCircle
 } from "lucide-react";
+import { renderMarkdownToHtml } from "../../utils/markdown";
 
 interface RichTextEditorProps {
   value: string;
@@ -200,11 +201,16 @@ function signTransaction(payload, secretKey) {
         body: JSON.stringify({ prompt: aiPrompt })
       });
       
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Une erreur inconnue est survenue.");
+        let errorMsg = "Une erreur inconnue est survenue.";
+        try {
+          const data = await response.json();
+          errorMsg = data.error || errorMsg;
+        } catch(e) {}
+        throw new Error(errorMsg);
       }
 
+      const data = await response.json();
       const generatedText = data.text || "";
       if (value.trim()) {
         if (window.confirm("Voulez-vous fusionner et AJOUTER l'article généré au texte actuel ? (Annuler écrasera le texte actuel)")) {
@@ -224,105 +230,6 @@ function signTransaction(payload, secretKey) {
     } finally {
       setIsAiGenerating(false);
     }
-  };
-
-  // Client-side markdown render compiler to show beautiful rich HTML in Preview tab
-  const renderMarkdownToHtml = (md: string) => {
-    if (!md.trim()) {
-      return `<p class="text-zinc-550 font-mono text-xs italic">Aucun contenu saisi. Utilisez l'éditeur pour rédiger votre texte.</p>`;
-    }
-
-    let html = md;
-
-    // Secure HTML sanitization
-    html = html
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-    // Headings
-    html = html.replace(/^### (.*?)$/gm, '<h3 class="text-base font-display font-medium text-white tracking-tight mt-5 mb-2 border-b border-white/5 pb-1">$1</h3>');
-    html = html.replace(/^## (.*?)$/gm, '<h2 class="text-lg font-display font-bold text-zinc-100 tracking-tight mt-6 mb-3 border-b border-white/5 pb-1">$1</h2>');
-    html = html.replace(/^# (.*?)$/gm, '<h1 class="text-2xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-100 to-zinc-400 mt-2 mb-4">$1</h1>');
-
-    // Code blocks with syntax highlights
-    html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 border border-slate-800/80 rounded-xl p-4 my-4 overflow-x-auto text-[11px] font-mono text-teal-400 leading-relaxed">$1</pre>');
-    html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-900 text-teal-300 px-1.5 py-0.5 rounded text-xs font-mono font-bold">$1</code>');
-
-    // Bold & Italic
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-    // Blockquotes
-    html = html.replace(/^&gt; (.*?)$/gm, '<blockquote class="border-l-4 border-amber-500/50 bg-amber-500/[0.02] rounded-r-xl px-4 py-2.5 my-4 italic text-zinc-300 font-sans">$1</blockquote>');
-
-    // Lists
-    html = html.replace(/^- (.*?)$/gm, '<li class="ml-4 list-disc text-zinc-300 my-1 font-sans text-sm">$1</li>');
-    html = html.replace(/^\d+\. (.*?)$/gm, '<li class="ml-4 list-decimal text-zinc-300 my-1 font-sans text-sm">$1</li>');
-
-    // Hyperlinks
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 font-medium underline inline-flex items-center gap-0.5">$1 <span class="text-[9px]">↗</span></a>');
-
-    // Tables parsing (robust basic Markdown tables)
-    const lines = html.split('\n');
-    let insideTable = false;
-    let tableHtml = "";
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      const isTableRow = line.startsWith('|') && line.endsWith('|');
-      
-      if (isTableRow) {
-        if (!insideTable) {
-          insideTable = true;
-          tableHtml += '<div class="overflow-x-auto my-4 border border-zinc-850 rounded-xl"><table class="w-full text-xs text-left text-zinc-300 border-collapse">';
-        }
-        
-        const cells = line.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
-        const isHeaderDivider = cells.every(c => c.startsWith(':') || c.startsWith('-') || c.endsWith(':'));
-        
-        if (isHeaderDivider) {
-          continue; // skip alignment lines
-        }
-
-        const isHeader = tableHtml.endsWith('</thead>') === false && tableHtml.indexOf('<thead>') === -1;
-        
-        if (isHeader) {
-          tableHtml += '<thead><tr class="bg-slate-900 border-b border-zinc-800 text-zinc-400 uppercase font-mono tracking-wider">';
-          cells.forEach(c => {
-            tableHtml += `<th class="p-3 font-semibold">${c}</th>`;
-          });
-          tableHtml += '</tr></thead><tbody>';
-        } else {
-          tableHtml += '<tr class="border-b border-zinc-900 hover:bg-white/[0.01] transition-colors">';
-          cells.forEach(c => {
-            tableHtml += `<td class="p-3">${c}</td>`;
-          });
-          tableHtml += '</tr>';
-        }
-      } else {
-        if (insideTable) {
-          insideTable = false;
-          tableHtml += '</tbody></table></div>';
-          lines[i] = tableHtml + lines[i];
-          tableHtml = "";
-        }
-      }
-    }
-
-    html = lines.join('\n');
-
-    // Paragraphs
-    html = html.split('\n\n').map(p => {
-      p = p.trim();
-      if (!p) return '';
-      if (p.startsWith('<h') || p.startsWith('<pre') || p.startsWith('<block') || p.startsWith('<li') || p.startsWith('<div')) {
-        return p;
-      }
-      return `<p class="text-zinc-300 text-sm leading-relaxed my-2.5 font-sans">${p}</p>`;
-    }).join('\n\n');
-
-    return html;
   };
 
   return (

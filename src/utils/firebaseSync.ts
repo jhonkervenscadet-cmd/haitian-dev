@@ -61,6 +61,19 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
  */
 
 // Save data in local state and LocalStorage as fallback
+const deduplicate = <T extends { id: string }>(items: T[]): T[] => {
+  const seen = new Set<string>();
+  return items.filter(item => {
+    if (!item || item.id === undefined || item.id === null) return false;
+    const idStr = String(item.id);
+    if (seen.has(idStr)) {
+      return false;
+    }
+    seen.add(idStr);
+    return true;
+  });
+};
+
 export const saveCollectionItem = async <T extends { id: string }>(
   collectionName: string,
   localKey: string,
@@ -74,6 +87,8 @@ export const saveCollectionItem = async <T extends { id: string }>(
   } else {
     updatedList.push(item);
   }
+
+  updatedList = deduplicate(updatedList);
 
   // Save to LocalStorage
   saveLocalData(localKey, updatedList);
@@ -100,7 +115,8 @@ export const deleteCollectionItem = async <T extends { id: string }>(
   itemId: string,
   existingItems: T[]
 ): Promise<T[]> => {
-  const updatedList = existingItems.filter(i => i.id !== itemId);
+  let updatedList = existingItems.filter(i => i.id !== itemId);
+  updatedList = deduplicate(updatedList);
   
   // Save to LocalStorage
   saveLocalData(localKey, updatedList);
@@ -127,18 +143,20 @@ export const loadCollection = async <T extends { id: string }>(
   defaultValues: T[]
 ): Promise<T[]> => {
   // Always get Local Storage cached data first
-  const cached = getLocalData<T[]>(localKey, defaultValues);
+  const cached = deduplicate(getLocalData<T[]>(localKey, defaultValues));
 
   if (isFirebaseEnabled && db) {
     try {
       const colRef = collection(db, collectionName);
       const snapshot = await getDocs(colRef);
       if (!snapshot.empty) {
-        const firestoreList: T[] = [];
+        let firestoreList: T[] = [];
         snapshot.forEach(docSnap => {
           firestoreList.push({ ...docSnap.data(), id: docSnap.id } as T);
         });
         
+        firestoreList = deduplicate(firestoreList);
+
         // Update local storage with latest Firestore values
         saveLocalData(localKey, firestoreList);
         return firestoreList;
@@ -179,10 +197,11 @@ export const subscribeToCollection = <T extends { id: string }>(
     try {
       const colRef = collection(db, collectionName);
       return onSnapshot(colRef, (snapshot) => {
-        const list: T[] = [];
+        let list: T[] = [];
         snapshot.forEach(docSnap => {
           list.push({ ...docSnap.data(), id: docSnap.id } as T);
         });
+        list = deduplicate(list);
         saveLocalData(localKey, list);
         onUpdate(list);
       }, (error) => {

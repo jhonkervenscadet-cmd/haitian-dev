@@ -5,6 +5,7 @@ import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { PopupSystem } from "./PopupSystem";
 import { BannerRenderer } from "./BannerRenderer";
+import { ChatBubble } from "./ChatBubble";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -49,6 +50,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Global popups rendering engine */}
       <PopupSystem />
+      <ChatBubble />
     </div>
   );
 };

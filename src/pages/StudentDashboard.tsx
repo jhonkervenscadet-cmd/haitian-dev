@@ -19,7 +19,8 @@ import {
   ChevronRight, 
   FileText, 
   Eye, 
-  ExternalLink 
+  ExternalLink,
+  FileDown
 } from "lucide-react";
 import { db, isFirebaseEnabled, auth } from "../lib/firebase";
 import { onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
@@ -27,6 +28,8 @@ import { collection, query, where, onSnapshot, orderBy } from "firebase/firestor
 import { BLOG_DATA, DOCS_DATA, FormationItem } from "../data/staticData";
 import { loadCollection, subscribeToCollection, saveCollectionItem } from "../utils/firebaseSync";
 import { normalizeArticle } from "../utils/normalizeArticle";
+import { openOrDownloadDocument } from "../utils/localFileStore";
+import { renderMarkdownToHtml } from "../utils/markdown";
 
 const TABS = [
   { id: "learning", label: "Espace Éducatif", icon: BookOpen },
@@ -91,7 +94,7 @@ export const StudentDashboard: React.FC = () => {
   const [studentInfo, setStudentInfo] = useState(() => {
     const savedUserRaw = localStorage.getItem("haitiandev_user");
     if (savedUserRaw) {
-      const savedUser = JSON.parse(savedUserRaw);
+      const savedUser = (function(val){ try { return JSON.parse(val); } catch(e) { return {}; } })(savedUserRaw);
       return {
         name: savedUser.name || "Stevenson",
         email: savedUser.email || "stevenson@gmail.com"
@@ -145,7 +148,7 @@ export const StudentDashboard: React.FC = () => {
       const savedMessagesRaw = localStorage.getItem("haitiandev_support_messages_local");
       if (savedMessagesRaw) {
         try {
-          const cached = JSON.parse(savedMessagesRaw) || [];
+          const cached = (function(val){ try { return JSON.parse(val); } catch(e) { return []; } })(savedMessagesRaw) || [];
           const filtered = cached.filter((m: any) => 
             (m.recipientEmail && m.recipientEmail.toLowerCase() === studentInfo.email.toLowerCase()) || 
             (m.email && m.email.toLowerCase() === studentInfo.email.toLowerCase())
@@ -205,13 +208,18 @@ export const StudentDashboard: React.FC = () => {
     const loadData = async () => {
       try {
         const forms = await loadCollection<any>("formations", "haitiandev_formations_local", DEFAULT_FORMATIONS);
-        setFormations(forms);
+        const uniqueForms = Array.from(new Map((forms || []).map(item => [item.id, item])).values());
+        setFormations(uniqueForms);
 
         const arts = await loadCollection<any>("articles", "haitiandev_articles_local", BLOG_DATA);
-        setArticles(arts.map(normalizeArticle));
+        const filteredArts = (arts || []).filter(a => !a.type || a.type === "Blog").map(normalizeArticle);
+        const uniqueArts = Array.from(new Map(filteredArts.map(item => [item.id, item])).values());
+        setArticles(uniqueArts);
 
         const dc = await loadCollection<any>("docs", "haitiandev_docs_local", DOCS_DATA);
-        setDocs(dc);
+        const filteredDocs = (dc || []).filter(d => !d.type || d.type === "Doc");
+        const uniqueDocs = Array.from(new Map(filteredDocs.map(item => [item.id, item])).values());
+        setDocs(uniqueDocs);
 
         setLearningLoading(false);
       } catch (err) {
@@ -223,19 +231,24 @@ export const StudentDashboard: React.FC = () => {
 
     // Subscribe to updates real-time
     const unsubscribeFormations = subscribeToCollection<any>("formations", "haitiandev_formations_local", (data) => {
-      setFormations(data);
+      const uniqueForms = Array.from(new Map((data || []).map(item => [item.id, item])).values());
+      setFormations(uniqueForms);
     }, DEFAULT_FORMATIONS);
 
     const unsubscribeArticles = subscribeToCollection<any>("articles", "haitiandev_articles_local", (data) => {
-      setArticles(data.map(normalizeArticle));
+      const filteredArts = (data || []).filter(a => !a.type || a.type === "Blog").map(normalizeArticle);
+      const uniqueArts = Array.from(new Map(filteredArts.map(item => [item.id, item])).values());
+      setArticles(uniqueArts);
     }, BLOG_DATA);
 
-    const unsubscribeDocs = subscribeToCollection<any>("documents", "haitiandev_documents_local", (data) => {
-      setDocs(data.map((d: any) => ({
+    const unsubscribeDocs = subscribeToCollection<any>("docs", "haitiandev_docs_local", (data) => {
+      const filteredDocs = (data || []).filter(d => !d.type || d.type === "Doc").map((d: any) => ({
         ...d,
         description: d.description || d.summary || ""
-      })));
-    }, []);
+      }));
+      const uniqueDocs = Array.from(new Map(filteredDocs.map(item => [item.id, item])).values());
+      setDocs(uniqueDocs);
+    }, DOCS_DATA);
 
     const unsubscribeEnrollments = subscribeToCollection<any>("devis", "haitian_dev_devis_local", (data) => {
       const filtered = data.filter((d: any) => d.email === studentInfo.email);
@@ -1114,30 +1127,46 @@ export const StudentDashboard: React.FC = () => {
               </div>
               
               <div className="p-6 md:p-8 overflow-y-auto space-y-6 text-zinc-300 text-sm leading-relaxed scrollbar-thin text-left font-sans flex-1">
-                {selectedDoc.sections && selectedDoc.sections.map((sec: any, idx: number) => (
-                  <div key={idx} className="space-y-3">
-                    <h5 className="text-base font-bold text-white border-l-2 border-blue-500 pl-3">{sec.title}</h5>
-                    <div className="text-zinc-400 text-xs sm:text-sm pl-3 space-y-2">
-                      {(sec.content || "").split('\n\n').map((para: string, pIdx: number) => {
-                        if (para.startsWith('```')) {
-                          const code = para.replace(/```[a-z]*/g, '').trim();
-                          return (
-                            <pre key={pIdx} className="bg-black border border-white/5 rounded-xl p-4 font-mono text-[11px] text-[#00E5FF] overflow-x-auto my-3">
-                              <code>{code}</code>
-                            </pre>
-                          );
-                        }
-                        return <p key={pIdx}>{para}</p>;
-                      })}
+                {selectedDoc.content ? (
+                  <div 
+                    className="prose prose-invert max-w-none text-zinc-300 select-text"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(selectedDoc.content) }}
+                  />
+                ) : (
+                  selectedDoc.sections && selectedDoc.sections.map((sec: any, idx: number) => (
+                    <div key={idx} className="space-y-3">
+                      <h5 className="text-base font-bold text-white border-l-2 border-blue-500 pl-3">{sec.title}</h5>
+                      <div className="text-zinc-400 text-xs sm:text-sm pl-3 space-y-2">
+                        {(sec.content || "").split('\n\n').map((para: string, pIdx: number) => {
+                          if (para.startsWith('```')) {
+                            const code = para.replace(/```[a-z]*/g, '').trim();
+                            return (
+                              <pre key={pIdx} className="bg-black border border-white/5 rounded-xl p-4 font-mono text-[11px] text-[#00E5FF] overflow-x-auto my-3">
+                                <code>{code}</code>
+                              </pre>
+                            );
+                          }
+                          return <p key={pIdx}>{para}</p>;
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               
-              <div className="p-4 md:p-6 bg-[#06060c] border-t border-white/5 flex justify-end">
+              <div className="p-4 md:p-6 bg-[#06060c] border-t border-white/5 flex justify-end gap-3">
+                {selectedDoc.documentUrl && (
+                  <button
+                    onClick={() => openOrDownloadDocument(selectedDoc.documentUrl, selectedDoc.title)}
+                    className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-650 hover:brightness-115 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-blue-950/40"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    Consulter le PDF
+                  </button>
+                )}
                 <button 
                   onClick={() => setSelectedDoc(null)}
-                  className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all"
+                  className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Fermer
                 </button>

@@ -7,16 +7,49 @@ import { DOCS_DATA, DocItem } from "../data/staticData";
 import { Card } from "../components/ui/Card";
 import { SEO } from "../components/SEO/SEO";
 import { getOrganizationSchema } from "../utils/seoSchemas";
+import { loadCollection, subscribeToCollection } from "../utils/firebaseSync";
+import { renderMarkdownToHtml } from "../utils/markdown";
+import { openOrDownloadDocument } from "../utils/localFileStore";
 
 export const Docs: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
 
+  const [docsList, setDocsList] = useState<any[]>(DOCS_DATA);
   const [activeDocId, setActiveDocId] = useState<string>("getting-started");
-  const activeDoc = DOCS_DATA.find((doc) => doc.id === activeDocId) || DOCS_DATA[0];
+
+  useEffect(() => {
+    const initDocs = async () => {
+      try {
+        const dc = await loadCollection<any>("docs", "haitiandev_docs_local", DOCS_DATA);
+        const filteredDocs = (dc || []).filter(d => !d.type || d.type === "Doc");
+        const uniqueDocs = Array.from(new Map(filteredDocs.map(item => [item.id, item])).values());
+        setDocsList(uniqueDocs);
+      } catch (err) {
+        console.error("Error loading docs collection:", err);
+      }
+    };
+    initDocs();
+
+    const unsubscribe = subscribeToCollection<any>("docs", "haitiandev_docs_local", (data) => {
+      const filteredDocs = (data || []).filter(d => !d.type || d.type === "Doc").map((d: any) => ({
+        ...d,
+        description: d.description || d.summary || ""
+      }));
+      const uniqueDocs = Array.from(new Map(filteredDocs.map(item => [item.id, item])).values());
+      setDocsList(uniqueDocs);
+    }, DOCS_DATA);
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const activeDoc = docsList.find((doc) => doc.id === activeDocId) || docsList[0] || DOCS_DATA[0];
 
   // High fidelity translations for hardcoded static records inside DOCS_DATA
-  const getTranslatedDocItem = (doc: DocItem) => {
+  const getTranslatedDocItem = (doc: any) => {
+    if (!doc) return { id: "", title: "", description: "", category: "GUIDES", sections: [] };
     if (!isEn) return doc;
 
     const englishDocs: { [key: string]: { title: string; description: string; category: string; sections: { title: string; content: string }[] } } = {
@@ -110,104 +143,160 @@ export const Docs: React.FC = () => {
         </div>
 
         {/* Documentation columns layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT COLUMN: Sidebar indices */}
-          <aside className="lg:col-span-4 space-y-4">
-            <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest block font-bold mb-2">
-              {isEn ? "Reference Guides" : "Guides de référence"}
-            </span>
+        {docsList.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16 bg-gradient-to-b from-zinc-900/30 via-zinc-950/40 to-black border border-zinc-800/80 rounded-3xl p-8 sm:p-12 max-w-2xl mx-auto space-y-6 relative overflow-hidden shadow-2xl"
+          >
+            <div className="absolute top-0 left-1/4 w-48 h-48 bg-blue-600/5 rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-red-600/5 rounded-full blur-[60px] pointer-events-none" />
             
-            <div className="space-y-2.5">
-              {DOCS_DATA.map((doc) => {
-                const transItem = getTranslatedDocItem(doc);
-                const isSelected = activeDocId === doc.id;
-                return (
-                  <button
-                    key={doc.id}
-                    onClick={() => setActiveDocId(doc.id)}
-                    className={`w-full p-4 rounded-xl text-left border flex items-center justify-between transition-all cursor-pointer duration-300 ${
-                      isSelected
-                        ? "bg-slate-900/60 backdrop-blur-xl border-white/20 text-white shadow-lg"
-                        : "bg-slate-950/20 backdrop-blur-md border-white/5 text-zinc-400 hover:border-red-500/20 hover:bg-slate-900/40"
-                    }`}
-                  >
-                    <div className="space-y-1 text-left">
-                      <span className="text-[10px] font-mono text-blue-500 font-bold uppercase tracking-wider block">[{transItem.category}]</span>
-                      <h4 className="font-display text-sm font-bold">{transItem.title}</h4>
-                    </div>
-                    <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? "rotate-90 text-red-500" : "text-zinc-650"}`} />
-                  </button>
-                );
-              })}
+            <div className="p-4 bg-zinc-900/80 rounded-2xl w-fit mx-auto border border-zinc-800/80 text-red-500/80 relative z-10">
+              <BookOpen className="w-10 h-10" />
             </div>
-          </aside>
+            
+            <div className="space-y-2 relative z-10">
+              <h3 className="font-display font-extrabold text-2xl text-white">
+                {isEn ? "No Documentation Available" : "Aucune Documentation Disponible"}
+              </h3>
+              <p className="text-zinc-400 text-sm font-sans max-w-md mx-auto leading-relaxed">
+                {isEn 
+                  ? "We are currently curating technical resources and API schemas. Please check back later or return to the homepage."
+                  : "Nous concevons actuellement des ressources techniques et des schémas d'API de pointe. Veuillez revenir plus tard ou retourner à l'accueil."}
+              </p>
+            </div>
 
-          {/* RIGHT COLUMN: Document content */}
-          <main className="lg:col-span-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeDocTrans.id}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.25 }}
-                className="bg-slate-900/30 backdrop-blur-xl border border-white/10 p-8 sm:p-10 rounded-2xl space-y-8 shadow-2xl"
+            <div className="pt-2 relative z-10">
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-red-600 hover:opacity-90 text-white font-bold text-xs uppercase tracking-wider transition-opacity"
               >
-                {/* Intro */}
-                <div className="space-y-3 border-b border-zinc-900 pb-6">
-                  <div className="flex items-center space-x-2 text-xs font-mono text-zinc-600">
-                    <span>INDEX /</span>
-                    <span>{activeDocTrans.category.toUpperCase()} /</span>
-                    <span className="text-blue-500">{activeDocTrans.title.toUpperCase()}</span>
-                  </div>
-                  <h2 className="font-display text-2xl font-extrabold text-white text-left">{activeDocTrans.title}</h2>
-                  <p className="text-zinc-400 text-sm font-sans text-left">{activeDocTrans.description}</p>
-                </div>
-
-                {/* Subsections details */}
-                <div className="space-y-6">
-                  {activeDocTrans.sections.map((sec, sIdx) => {
-                    const isCodeBlock = sec.content.includes("```ts");
-                    return (
-                      <div key={sIdx} className="space-y-3 text-left">
-                        <h3 className="font-display text-base font-bold text-white flex items-center space-x-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                          <span>{sec.title}</span>
-                        </h3>
-                        
-                        {isCodeBlock ? (
-                          <div className="space-y-3 font-mono text-xs text-zinc-400 bg-zinc-950 p-4 rounded-xl border border-zinc-850 overflow-x-auto leading-relaxed">
-                            <p className="text-zinc-600">// Code execution block</p>
-                            <pre className="whitespace-pre-wrap">{sec.content.replace(/```ts\n|```/g, "")}</pre>
-                          </div>
-                        ) : (
-                          <p className="text-zinc-400 text-sm font-sans leading-relaxed">
-                            {sec.content}
-                          </p>
-                        )}
+                <span>{isEn ? "Back to Home" : "Retour à l'accueil"}</span>
+              </Link>
+            </div>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* LEFT COLUMN: Sidebar indices */}
+            <aside className="lg:col-span-4 space-y-4 max-h-[85vh] overflow-y-auto pr-2">
+              <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-widest block font-bold mb-2">
+                {isEn ? "Reference Guides" : "Guides de référence"}
+              </span>
+              
+              <div className="space-y-2.5">
+                {docsList.map((doc) => {
+                  const transItem = getTranslatedDocItem(doc);
+                  const isSelected = activeDocId === doc.id;
+                  return (
+                    <button
+                      key={doc.id}
+                      onClick={() => setActiveDocId(doc.id)}
+                      className={`w-full p-4 rounded-xl text-left border flex items-center justify-between transition-all cursor-pointer duration-300 ${
+                        isSelected
+                          ? "bg-slate-900/60 backdrop-blur-xl border-white/20 text-white shadow-lg"
+                          : "bg-slate-950/20 backdrop-blur-md border-white/5 text-zinc-400 hover:border-red-500/20 hover:bg-slate-900/40"
+                      }`}
+                    >
+                      <div className="space-y-1 text-left">
+                        <span className="text-[10px] font-mono text-blue-500 font-bold uppercase tracking-wider block">[{(transItem.category || "GUIDES").toUpperCase()}]</span>
+                        <h4 className="font-display text-sm font-bold">{transItem.title}</h4>
                       </div>
-                    );
-                  })}
-                </div>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? "rotate-90 text-red-500" : "text-zinc-650"}`} />
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
 
-                {/* Developer Footer validation */}
-                <div className="pt-6 border-t border-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-zinc-500">
-                  <div className="flex items-center space-x-2 justify-center sm:justify-start">
-                    <Terminal className="w-4 h-4 text-zinc-600" />
-                    <span>{isEn ? "Compiled documentation v1.0.4" : "Documentation compilée v1.0.4"}</span>
+            {/* RIGHT COLUMN: Document content */}
+            <main className="lg:col-span-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeDocTrans.id}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="bg-slate-900/30 backdrop-blur-xl border border-white/10 p-8 sm:p-10 rounded-2xl space-y-8 shadow-2xl max-h-[85vh] overflow-y-auto"
+                >
+                  {/* Intro */}
+                  <div className="space-y-3 border-b border-zinc-900 pb-6">
+                    <div className="flex items-center space-x-2 text-xs font-mono text-zinc-600">
+                      <span>INDEX /</span>
+                      <span>{(activeDocTrans.category || "GUIDES").toUpperCase()} /</span>
+                      <span className="text-blue-500">{(activeDocTrans.title || "").toUpperCase()}</span>
+                    </div>
+                    <h2 className="font-display text-2xl font-extrabold text-white text-left">{activeDocTrans.title}</h2>
+                    <p className="text-zinc-400 text-sm font-sans text-left">{activeDocTrans.description}</p>
                   </div>
-                  <div className="flex items-center space-x-1.5 text-emerald-500 justify-center sm:justify-start">
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>{isEn ? "Verified cryptographic compliance checks" : "Signatures de chiffrement conformes"}</span>
+
+                  {/* Subsections details */}
+                  <div className="space-y-6">
+                    {activeDocTrans.content ? (
+                      <div 
+                        className="prose prose-invert max-w-none text-sm text-zinc-350 space-y-4 font-sans text-left"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(activeDocTrans.content) }}
+                      />
+                    ) : activeDocTrans.sections ? (
+                      activeDocTrans.sections.map((sec: any, sIdx: number) => {
+                        const isCodeBlock = sec.content && sec.content.includes("```ts");
+                        return (
+                          <div key={sIdx} className="space-y-3 text-left">
+                            <h3 className="font-display text-base font-bold text-white flex items-center space-x-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                              <span>{sec.title}</span>
+                            </h3>
+                            
+                            {isCodeBlock ? (
+                              <div className="space-y-3 font-mono text-xs text-zinc-400 bg-zinc-950 p-4 rounded-xl border border-zinc-850 overflow-x-auto leading-relaxed">
+                                <p className="text-zinc-600">// Code execution block</p>
+                                <pre className="whitespace-pre-wrap">{sec.content.replace(/```ts\n|```/g, "")}</pre>
+                              </div>
+                            ) : (
+                              <p className="text-zinc-400 text-sm font-sans leading-relaxed">
+                                {sec.content}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-zinc-500 text-sm italic">{isEn ? "No content available." : "Aucun contenu disponible."}</p>
+                    )}
                   </div>
-                </div>
 
-              </motion.div>
-            </AnimatePresence>
-          </main>
+                  {activeDocTrans.documentUrl && (
+                    <div className="pt-6 border-t border-zinc-900 text-left">
+                      <button
+                        onClick={() => openOrDownloadDocument(activeDocTrans.documentUrl, activeDocTrans.title)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-red-600 text-white hover:from-blue-500 hover:to-red-500 text-xs font-mono font-bold uppercase tracking-wider rounded-xl transition-all shadow-lg hover:shadow-red-500/20 cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>{isEn ? "Open Technical Document (PDF)" : "Ouvrir la Fiche Technique (PDF)"}</span>
+                      </button>
+                    </div>
+                  )}
 
-        </div>
+                  {/* Developer Footer validation */}
+                  <div className="pt-6 border-t border-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-zinc-500">
+                    <div className="flex items-center space-x-2 justify-center sm:justify-start">
+                      <Terminal className="w-4 h-4 text-zinc-600" />
+                      <span>{isEn ? "Compiled documentation v1.0.4" : "Documentation compilée v1.0.4"}</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5 text-emerald-500 justify-center sm:justify-start">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{isEn ? "Verified cryptographic compliance checks" : "Signatures de chiffrement conformes"}</span>
+                    </div>
+                  </div>
+
+                </motion.div>
+              </AnimatePresence>
+            </main>
+
+          </div>
+        )}
 
       </div>
     </div>

@@ -91,7 +91,11 @@ const getLocalData = <T>(key: string, defaultValue: T): T => {
 };
 
 const saveLocalData = <T>(key: string, data: T): void => {
-  localStorage.setItem(key, JSON.stringify(data));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err) {
+    console.warn(`LocalStorage quota exceeded or write failed for key "${key}":`, err);
+  }
 };
 
 export { 

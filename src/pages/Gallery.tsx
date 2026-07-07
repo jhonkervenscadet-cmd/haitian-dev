@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
-import { Expand, Sparkles, Sliders, LayoutGrid, Heart } from "lucide-react";
+import { Expand, Sparkles, Sliders, LayoutGrid, Heart, Image as ImageIcon } from "lucide-react";
 import { GALLERY_DATA, GalleryItem } from "../data/staticData";
 import { Card } from "../components/ui/Card";
 import { SEO } from "../components/SEO/SEO";
 import { getOrganizationSchema } from "../utils/seoSchemas";
+import { loadCollection, subscribeToCollection } from "../utils/firebaseSync";
 
 export const Gallery: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -14,6 +15,23 @@ export const Gallery: React.FC = () => {
 
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [lightboxItem, setLightboxItem] = useState<GalleryItem | null>(null);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(GALLERY_DATA);
+
+  useEffect(() => {
+    const initGallery = async () => {
+      const data = await loadCollection<GalleryItem>("gallery", "haitiandev_gallery_local", GALLERY_DATA);
+      setGalleryItems(data);
+    };
+    initGallery();
+
+    const unsubscribeGallery = subscribeToCollection<GalleryItem>("gallery", "haitiandev_gallery_local", (data) => {
+      setGalleryItems(data);
+    }, GALLERY_DATA);
+
+    return () => {
+      unsubscribeGallery();
+    };
+  }, []);
 
   const categories = [
     { id: "All", label: isEn ? "All" : "Tous" },
@@ -24,8 +42,8 @@ export const Gallery: React.FC = () => {
   ];
 
   const filteredItems = activeCategory === "All"
-    ? GALLERY_DATA
-    : GALLERY_DATA.filter((item) => (item.category || "").toLowerCase() === (activeCategory || "").toLowerCase());
+    ? galleryItems
+    : galleryItems.filter((item) => (item.category || "").toLowerCase() === (activeCategory || "").toLowerCase());
 
   // High fidelity translations for hardcoded static records inside GALLERY_DATA
   const getTranslatedGalleryItem = (id: string, title: string, desc: string, category: string) => {
@@ -128,47 +146,75 @@ export const Gallery: React.FC = () => {
         </div>
 
         {/* Grid Masonry Layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <AnimatePresence mode="popLayout">
-            {filteredItems.map((item, idx) => {
-              const trans = getTranslatedGalleryItem(item.id, item.title, item.desc, item.category);
-              return (
-                <motion.div
-                  layout
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  onClick={() => setLightboxItem(item)}
-                  className={`group relative overflow-hidden rounded-2xl border border-zinc-900 cursor-pointer ${item.aspect} bg-linear-to-b ${item.color} p-6 flex flex-col justify-between`}
-                >
-                  {/* Visual Glass Shimmer Overlay */}
-                  <div className="absolute inset-0 bg-zinc-950/25 group-hover:bg-transparent transition-all duration-300" />
-                  <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-85" />
-                  
-                  {/* Upper row: icon and group */}
-                  <div className="relative z-10 flex items-center justify-between pointer-events-none">
-                    <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase bg-zinc-900/60 backdrop-blur-md border border-zinc-850 px-2 py-0.5 rounded">
-                      {trans.category}
-                    </span>
-                    <Expand className="w-4 h-4 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+        {filteredItems.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredItems.map((item, idx) => {
+                const trans = getTranslatedGalleryItem(item.id, item.title, item.desc, item.category);
+                return (
+                  <motion.div
+                    layout
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={() => setLightboxItem(item)}
+                    className={`group relative overflow-hidden rounded-2xl border border-zinc-900 cursor-pointer ${item.aspect} bg-linear-to-b ${item.color} p-6 flex flex-col justify-between`}
+                  >
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt={trans.title}
+                        className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity duration-300 pointer-events-none"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    {/* Visual Glass Shimmer Overlay */}
+                    <div className="absolute inset-0 bg-zinc-950/25 group-hover:bg-transparent transition-all duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-85" />
+                    
+                    {/* Upper row: icon and group */}
+                    <div className="relative z-10 flex items-center justify-between pointer-events-none">
+                      <span className="text-[10px] font-mono tracking-wider text-zinc-400 uppercase bg-zinc-900/60 backdrop-blur-md border border-zinc-850 px-2 py-0.5 rounded">
+                        {trans.category}
+                      </span>
+                      <Expand className="w-4 h-4 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
 
-                  {/* Lower row: details */}
-                  <div className="relative z-10 space-y-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    <h3 className="font-display text-base font-bold text-white group-hover:text-blue-400 transition-colors">
-                      {trans.title}
-                    </h3>
-                    <p className="text-zinc-300 text-xs line-clamp-1 group-hover:line-clamp-none transition-all font-sans leading-relaxed">
-                      {trans.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+                    {/* Lower row: details */}
+                    <div className="relative z-10 space-y-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                      <h3 className="font-display text-base font-bold text-white group-hover:text-blue-400 transition-colors">
+                        {trans.title}
+                      </h3>
+                      <p className="text-zinc-300 text-xs line-clamp-1 group-hover:line-clamp-none transition-all font-sans leading-relaxed">
+                        {trans.desc}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center text-center py-24 px-6 border border-dashed border-zinc-850 rounded-3xl bg-zinc-900/10 max-w-lg mx-auto"
+          >
+            <div className="w-12 h-12 rounded-full bg-zinc-900/80 border border-zinc-800 flex items-center justify-center mb-4">
+              <ImageIcon className="w-5 h-5 text-zinc-500" />
+            </div>
+            <h3 className="font-display text-base font-bold text-white mb-2">
+              {isEn ? "No creations found" : "Aucune création trouvée"}
+            </h3>
+            <p className="text-zinc-400 text-xs leading-relaxed max-w-xs">
+              {isEn 
+                ? "There are currently no items in this category. Check back soon for new digital prototypes." 
+                : "Aucune photo ou création n'est disponible dans cette catégorie pour le moment. Revenez bientôt pour de nouvelles maquettes."}
+            </p>
+          </motion.div>
+        )}
 
         {/* Lightbox Overlay Detail */}
         <AnimatePresence>
@@ -186,6 +232,14 @@ export const Gallery: React.FC = () => {
                   className={`relative max-w-xl w-full rounded-3xl overflow-hidden border border-zinc-800 bg-linear-to-br ${lightboxItem.color} p-8 sm:p-12 text-center shadow-2xl flex flex-col justify-between h-[360px]`}
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {lightboxItem.image && (
+                    <img
+                      src={lightboxItem.image}
+                      alt={transL.title}
+                      className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-zinc-950/45" />
 
                   <div className="relative z-10 space-y-4">

@@ -57,6 +57,7 @@ export const Services: React.FC = () => {
   const [step, setStep] = useState<number>(1);
   const [selectedService, setSelectedService] = useState<string>("");
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [customFeatures, setCustomFeatures] = useState<string>("");
   const [budget, setBudget] = useState<string>("");
   const [timeline, setTimeline] = useState<string>("");
   const [contactInfo, setContactInfo] = useState({
@@ -211,7 +212,7 @@ export const Services: React.FC = () => {
         email: contactInfo.email,
         clientEmail: contactInfo.email, // double-secured key compatibility for rules and queries
         company: contactInfo.company || "",
-        specs: `Features: ${selectedFeatures.join(', ') || 'Standard'}\nPhone: ${contactInfo.phone || 'N/A'}${createdUser ? '\nAccount: Auto-created Client space (Verification sent)' : ''}`,
+        specs: `Features: ${selectedFeatures.join(', ') || 'Standard'}${customFeatures ? '\nCustom Features: ' + customFeatures : ''}\nPhone: ${contactInfo.phone || 'N/A'}${createdUser ? '\nAccount: Auto-created Client space (Verification sent)' : ''}`,
         estimatedBudget: budget || "À définir",
         desiredDeadline: timeline || "Flexible",
         serviceType: activeServiceTitle,
@@ -587,6 +588,18 @@ export const Services: React.FC = () => {
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="mt-6 space-y-2">
+                  <label className="block text-xs font-mono text-zinc-500 uppercase">
+                    {isEn ? "Custom Features (Optional)" : "Fonctionnalités personnalisées (Optionnel)"}
+                  </label>
+                  <textarea
+                    value={customFeatures}
+                    onChange={(e) => setCustomFeatures(e.target.value)}
+                    placeholder={isEn ? "List any other features you would like..." : "Listez ici toute autre fonctionnalité que vous souhaitez..."}
+                    className="w-full bg-zinc-950/50 border border-zinc-900 rounded-xl p-4 text-sm text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:border-blue-900/50 focus:ring-1 focus:ring-blue-900/50 transition-all min-h-[100px] resize-y"
+                  />
                 </div>
 
                 <div className="flex items-center justify-between pt-6 border-t border-zinc-900">

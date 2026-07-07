@@ -17,8 +17,7 @@ service cloud.firestore {
         (request.auth.token.email != null && request.auth.token.email == 'devhaitian@gmail.com') ||
         (request.auth.token.email != null && request.auth.token.email == 'contact@haitiandev.org') ||
         (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.com')) ||
-        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org')) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin')
+        (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org'))
       );
     }
 
@@ -164,6 +163,12 @@ service cloud.firestore {
         (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.com')) ||
         (request.auth.token.email != null && request.auth.token.email.matches('.*@haitiandev\\.org'))
       )) || isAdmin();
+    }
+
+    // Gallery
+    match /gallery/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

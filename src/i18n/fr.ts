@@ -8,6 +8,7 @@ export const fr = {
     processus: "Processus",
     about: "À propos",
     partners: "Partenaires",
+    gallery: "Galerie",
     training: "Formations",
     blog: "Blog",
     docs: "Docs",

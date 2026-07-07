@@ -50,17 +50,19 @@ import {
   Search,
   KeyRound,
   Upload,
-  LogOut
+  LogOut,
+  FileDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { loadCollection, subscribeToCollection, saveCollectionItem, deleteCollectionItem } from "../utils/firebaseSync";
-import { db, storage, auth } from "../lib/firebase";
+import { db, storage, auth, isFirebaseEnabled } from "../lib/firebase";
 import { addDoc, collection, deleteDoc, doc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { PROJECTS_DATA, FormationItem, BLOG_DATA } from "../data/staticData";
+import { PROJECTS_DATA, FormationItem, BLOG_DATA, GALLERY_DATA, GalleryItem } from "../data/staticData";
 import { normalizeArticle } from "../utils/normalizeArticle";
 import { RichTextEditor } from "../components/ui/RichTextEditor";
+import { storeLocalFile, openOrDownloadDocument } from "../utils/localFileStore";
 
 // Types definition for our local state
 interface QuoteBrief {
@@ -344,7 +346,7 @@ export const AdminPanel: React.FC = () => {
   // Navigation Sidebar states
   const [activeTab, setActiveTab] = useState<"content" | "accounts" | "devis" | "popups" | "messages" | "profile" | "stats" | "credentials" | "billing" | "partnerships">("content");
   const [isLiveEditing, setIsLiveEditing] = useState(false);
-  const [contentSubTab, setContentSubTab] = useState<"projects" | "testimonials" | "formations" | "education" | "partners" | "landingStats">("projects");
+  const [contentSubTab, setContentSubTab] = useState<"projects" | "testimonials" | "formations" | "education" | "partners" | "landingStats" | "gallery">("projects");
   const [eduTab, setEduTab] = useState<"formation" | "blog" | "doc">("formation");
   const [devisSubTab, setDevisSubTab] = useState<string>("all");
   const [accountsSubTab, setAccountsSubTab] = useState<"all" | "Étudiant" | "Admin" | "Client">("all");
@@ -530,6 +532,18 @@ export const AdminPanel: React.FC = () => {
   // Formations CRUD list state & initialization
   const [formations, setFormations] = useState<FormationItem[]>([]);
 
+  // Gallery CRUD list & form states
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [galleryForm, setGalleryForm] = useState<Omit<GalleryItem, "id"> & { image?: string }>({
+    title: "",
+    category: "UI/UX Design",
+    color: "from-blue-600 to-indigo-800",
+    aspect: "aspect-video",
+    desc: "",
+    image: ""
+  });
+  const [isGalleryEditingId, setIsGalleryEditingId] = useState<string | null>(null);
+
   useEffect(() => {
     const DEFAULT_FORMATIONS: FormationItem[] = [
       {
@@ -639,6 +653,22 @@ export const AdminPanel: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const initGallery = async () => {
+      const data = await loadCollection<GalleryItem>("gallery", "haitiandev_gallery_local", GALLERY_DATA);
+      setGalleryItems(data);
+    };
+    initGallery();
+
+    const unsubscribeGallery = subscribeToCollection<GalleryItem>("gallery", "haitiandev_gallery_local", (data) => {
+      setGalleryItems(data);
+    }, GALLERY_DATA);
+
+    return () => {
+      unsubscribeGallery();
+    };
+  }, []);
+
   const [educationItems, setEducationItems] = useState<EducationItem[]>(initialEducation);
 
   // Load and merge unified education items in real-time
@@ -648,15 +678,35 @@ export const AdminPanel: React.FC = () => {
     let currentFormations: any[] = [];
 
     const rebuildEducationItems = () => {
-      const blogs = (currentBlog || []).map(b => ({ ...normalizeArticle(b), type: "Blog" }));
-      const docs = (currentDocs || []).map(d => ({ ...d, type: "Doc" }));
-      const forms = (currentFormations || []).map(f => ({ ...f, type: "Formation" }));
+      const blogs = (currentBlog || [])
+        .filter(b => !b.type || b.type === "Blog")
+        .map(b => ({ ...normalizeArticle(b), type: "Blog" }));
+      const docs = (currentDocs || [])
+        .filter(d => !d.type || d.type === "Doc")
+        .map(d => ({ ...d, type: "Doc" }));
+      const forms = (currentFormations || [])
+        .filter(f => !f.type || f.type === "Formation")
+        .map(f => ({ ...f, type: "Formation" }));
       
       const merged = [...blogs, ...docs, ...forms];
-      if (merged.length === 0) {
+      
+      // Deduplicate by ID to ensure no duplicate key errors in React
+      const uniqueMerged: any[] = [];
+      const seenIds = new Set();
+      for (const item of merged) {
+        if (item && item.id) {
+          const key = String(item.id);
+          if (!seenIds.has(key)) {
+            seenIds.add(key);
+            uniqueMerged.push(item);
+          }
+        }
+      }
+
+      if (uniqueMerged.length === 0) {
         setEducationItems(initialEducation);
       } else {
-        setEducationItems(merged);
+        setEducationItems(uniqueMerged);
       }
     };
 
@@ -1116,7 +1166,7 @@ export const AdminPanel: React.FC = () => {
         if (foundItem.type === "Blog") {
           await deleteCollectionItem("articles", "haitiandev_articles_local", itemId, educationItems.filter(ei => ei.type === "Blog"));
         } else if (foundItem.type === "Doc") {
-          await deleteCollectionItem("docs", "haitiandev_documents_local", itemId, educationItems.filter(ei => ei.type === "Doc"));
+          await deleteCollectionItem("docs", "haitiandev_docs_local", itemId, educationItems.filter(ei => ei.type === "Doc"));
         } else {
           await deleteCollectionItem("education_formations", "haitiandev_edu_formations_local", itemId, educationItems.filter(ei => ei.type === "Formation"));
         }
@@ -1124,6 +1174,9 @@ export const AdminPanel: React.FC = () => {
     } else if (itemType === 'formation') {
       const updatedList = await deleteCollectionItem<any>("formations", "haitiandev_formations_local", itemId, formations);
       setFormations(updatedList);
+    } else if (itemType === 'gallery') {
+      const updatedList = await deleteCollectionItem<GalleryItem>("gallery", "haitiandev_gallery_local", itemId, galleryItems);
+      setGalleryItems(updatedList);
     } else if (itemType === 'credentials') {
       const updatedList = await deleteCollectionItem<any>("acces_projets", "haitiandev_acces_projets", itemId, projectAccessList);
       setProjectAccessList(updatedList);
@@ -1551,6 +1604,42 @@ export const AdminPanel: React.FC = () => {
     });
   };
 
+  const handleSaveGallery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isGalleryEditingId) {
+      const updatedItem = { id: isGalleryEditingId, ...galleryForm };
+      const updatedList = await saveCollectionItem<GalleryItem>("gallery", "haitiandev_gallery_local", updatedItem, galleryItems);
+      setGalleryItems(updatedList);
+    } else {
+      const newItem: GalleryItem = {
+        id: "gal-" + Date.now().toString(),
+        ...galleryForm
+      };
+      const updatedList = await saveCollectionItem<GalleryItem>("gallery", "haitiandev_gallery_local", newItem, galleryItems);
+      setGalleryItems(updatedList);
+    }
+    // Reset form
+    setGalleryForm({
+      title: "",
+      category: "UI/UX Design",
+      color: "from-blue-600 to-indigo-800",
+      aspect: "aspect-video",
+      desc: "",
+      image: ""
+    });
+    setIsGalleryEditingId(null);
+  };
+
+  const handleDeleteGallery = (id: string) => {
+    const g = galleryItems.find(item => item.id === id);
+    setDeleteConfirmation({
+      isOpen: true,
+      itemId: id,
+      itemType: 'gallery',
+      title: g?.title || 'cette photo'
+    });
+  };
+
   // ==================== EDUCATION CRUD ====================
   const handleOpenEducationModal = (edu: EducationItem | null = null) => {
     if (edu) {
@@ -1610,35 +1699,19 @@ export const AdminPanel: React.FC = () => {
     const id = editingEducation ? editingEducation.id : Date.now().toString();
 
     let finalDocUrl = educationForm.documentUrl || "";
-    
-    if (educationForm.type === "Doc" && docFile) {
-      setIsDocUploading(true);
-      try {
-        console.log("Uploading file to storage...");
-        const storageRef = ref(storage, `documents/${Date.now()}_${docFile.name}`);
-        await uploadBytes(storageRef, docFile);
-        finalDocUrl = await getDownloadURL(storageRef);
-        console.log("File uploaded, URL:", finalDocUrl);
-      } catch (err) {
-        console.error("Error uploading document:", err);
-        alert("Erreur lors de l'upload du document dans le Cloud Storage.");
-        setIsDocUploading(false);
-        return;
-      }
-      setIsDocUploading(false);
-    }
-    
-    // Validate if Doc type has required URL if not editing
-    if (educationForm.type === "Doc" && !finalDocUrl && !editingEducation) {
-        alert("Vous devez uploader un document pour le type 'Doc'.");
-        return;
-    }
+
+    const defaultBannerMap: Record<string, string> = {
+      "Formation": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+      "Blog": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
+      "Doc": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80"
+    };
 
     const saveItem = {
       id,
       ...educationForm,
+      bannerUrl: educationForm.bannerUrl || defaultBannerMap[educationForm.type] || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
       documentUrl: finalDocUrl,
-      content: educationForm.content || (docFile ? `Document original: ${docFile.name}` : "Document technique HaitianDev")
+      content: educationForm.content || "Document technique HaitianDev"
     };
     // Determine target collection and local storage key based on item type
     let collectionName = "education_formations";
@@ -1649,14 +1722,19 @@ export const AdminPanel: React.FC = () => {
       localKey = "haitiandev_articles_local";
     } else if (educationForm.type === "Doc") {
       collectionName = "docs";
-      localKey = "haitiandev_documents_local";
+      localKey = "haitiandev_docs_local";
     }
 
     console.log("Saving item:", saveItem);
     console.log("CollectionName:", collectionName, "LocalKey:", localKey, "docFile:", docFile, "Type:", educationForm.type);
 
     try {
-      await saveCollectionItem(collectionName, localKey, saveItem, educationItems);
+      const existingList = educationItems.filter(e => {
+        if (collectionName === "articles") return e.type === "Blog";
+        if (collectionName === "docs") return e.type === "Doc";
+        return e.type === "Formation";
+      });
+      await saveCollectionItem(collectionName, localKey, saveItem, existingList);
       console.log("Item saved successfully");
       setDocFile(null);
       setIsEducationModalOpen(false);
@@ -1784,18 +1862,6 @@ export const AdminPanel: React.FC = () => {
             >
               <ClipboardList className="w-4 h-4 text-emerald-500" />
               <span>Gestion Devis [{devisList.filter(d => d.status === "Nouveau").length}]</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("partnerships")}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                activeTab === "partnerships"
-                  ? "bg-gradient-to-r from-[#00209F]/25 to-[#D21034]/25 border border-white/10 text-white shadow-lg"
-                  : "text-zinc-400 hover:text-white hover:bg-slate-900/40 border border-transparent"
-              }`}
-            >
-              <Briefcase className="w-4 h-4 text-orange-500" />
-              <span>Partenariats [{partnerRequests.filter(r => r.status === "Nouveau").length}]</span>
             </button>
 
             <button
@@ -1928,16 +1994,6 @@ export const AdminPanel: React.FC = () => {
           Devis ({devisList.filter(d => d.status === "Nouveau").length})
         </button>
         <button
-          onClick={() => setActiveTab("partnerships")}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "partnerships"
-              ? "bg-gradient-to-r from-[#00209F] to-[#D21034] text-white"
-              : "bg-slate-900 border border-slate-800 text-zinc-400"
-          }`}
-        >
-          Partenariats ({partnerRequests.filter(r => r.status === "Nouveau").length})
-        </button>
-        <button
           onClick={() => setActiveTab("popups")}
           className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
             activeTab === "popups"
@@ -2060,6 +2116,17 @@ export const AdminPanel: React.FC = () => {
             >
               <BarChart3 className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
               <span>Stats Landing (4)</span>
+            </button>
+            <button
+              onClick={() => setContentSubTab("gallery")}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                contentSubTab === "gallery"
+                  ? "bg-slate-900 border border-slate-800 text-white shadow-md shadow-black/40"
+                  : "text-zinc-500 hover:text-zinc-350"
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-purple-500" />
+              <span>Galerie ({galleryItems.length})</span>
             </button>
           </div>
         )}
@@ -2540,6 +2607,15 @@ export const AdminPanel: React.FC = () => {
                           <p className="text-xs text-zinc-400 max-w-xs truncate italic">{edu.content}</p>
                         </div>
                         <div className="flex space-x-2">
+                          {edu.documentUrl && (
+                            <button
+                              onClick={() => openOrDownloadDocument(edu.documentUrl!, edu.title)}
+                              className="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-amber-500 hover:text-amber-400 hover:border-slate-700 transition-colors cursor-pointer"
+                              title="Télécharger / Ouvrir le PDF"
+                            >
+                              <FileDown className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               const shareUrl = `${window.location.origin}/education/${edu.id}`;
@@ -2929,6 +3005,255 @@ export const AdminPanel: React.FC = () => {
                       <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-1">{s.label}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- SECTION 1.6: GALLERY MANAGEMENT ---------------- */}
+        {activeTab === "content" && contentSubTab === "gallery" && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header Card */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/40 backdrop-blur-lg border border-slate-800 p-6 rounded-3xl">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <ImageIcon className="w-5 h-5 text-purple-500" />
+                  <h3 className="text-lg font-bold text-white font-display">Gestion de la Galerie</h3>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Créez, modifiez ou supprimez des prototypes, captures d'écran UI/UX et maquettes de design exposés sur la page Galerie.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setGalleryForm({
+                    title: "",
+                    category: "UI/UX Design",
+                    color: "from-blue-600 to-indigo-800",
+                    aspect: "aspect-video",
+                    desc: "",
+                    image: ""
+                  });
+                  setIsGalleryEditingId(null);
+                }}
+                className="bg-slate-950 text-zinc-400 hover:text-white border border-slate-800 hover:bg-slate-900 rounded-xl px-4 py-2 text-xs font-mono font-bold uppercase transition-all"
+              >
+                Réinitialiser le formulaire
+              </button>
+            </div>
+
+            {/* Content Split Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Form Column */}
+              <div className="lg:col-span-5 bg-slate-900/40 backdrop-blur-md border border-slate-800/80 p-6 rounded-3xl space-y-4">
+                <h4 className="text-sm font-bold text-white font-mono uppercase tracking-wider border-b border-slate-800 pb-2">
+                  {isGalleryEditingId ? "Modifier la création" : "Ajouter une création / photo"}
+                </h4>
+
+                <form onSubmit={handleSaveGallery} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5">Titre de la création *</label>
+                    <input
+                      type="text"
+                      required
+                      value={galleryForm.title}
+                      onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })}
+                      placeholder="Ex: MonCash Réimaginé v2"
+                      className="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 rounded-xl px-4 py-2.5 text-white transition-all outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5">Catégorie *</label>
+                      <select
+                        value={galleryForm.category}
+                        onChange={(e) => setGalleryForm({ ...galleryForm, category: e.target.value })}
+                        className="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 rounded-xl px-4 py-2.5 text-white transition-all outline-none"
+                      >
+                        <option value="UI/UX Design">UI/UX Design</option>
+                        <option value="Fintech">Fintech</option>
+                        <option value="Interactive Design">Interactive Design</option>
+                        <option value="Graphic Design">Graphic Design</option>
+                        <option value="AI UI">AI UI</option>
+                        <option value="Web3D">Web3D</option>
+                        <option value="Tech UI">Tech UI</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5">Ratio d'Aspect *</label>
+                      <select
+                        value={galleryForm.aspect}
+                        onChange={(e) => setGalleryForm({ ...galleryForm, aspect: e.target.value })}
+                        className="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 rounded-xl px-4 py-2.5 text-white transition-all outline-none"
+                      >
+                        <option value="aspect-video">16:9 (Vidéo/Grand)</option>
+                        <option value="aspect-square">1:1 (Carré)</option>
+                        <option value="aspect-[3/4]">3:4 (Affiche/Vertical)</option>
+                        <option value="aspect-[4/3]">4:3 (Photo/Paysage)</option>
+                        <option value="aspect-[9/16]">9:16 (Mobile/Vertical)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5">Lien d'image / URL Photo (Optionnel)</label>
+                    <input
+                      type="url"
+                      value={galleryForm.image || ""}
+                      onChange={(e) => setGalleryForm({ ...galleryForm, image: e.target.value })}
+                      placeholder="Ex: https://images.unsplash.com/photo-..."
+                      className="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 rounded-xl px-4 py-2.5 text-white transition-all outline-none"
+                    />
+                    <p className="text-[10px] text-zinc-500 mt-1">Laissez vide pour utiliser uniquement la couleur de dégradé ci-dessous.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5">Couleur / Dégradé de fond</label>
+                    <select
+                      value={galleryForm.color}
+                      onChange={(e) => setGalleryForm({ ...galleryForm, color: e.target.value })}
+                      className="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 rounded-xl px-4 py-2.5 text-white transition-all outline-none"
+                    >
+                      <option value="from-blue-600 to-indigo-800">Bleu Étoilé (from-blue-600 to-indigo-800)</option>
+                      <option value="from-purple-600 to-pink-700">Aurore Violette (from-purple-600 to-pink-700)</option>
+                      <option value="from-red-600 to-orange-600">Rouge Électrique (from-red-600 to-orange-600)</option>
+                      <option value="from-emerald-600 to-teal-800">Bleu Lagon (from-emerald-600 to-teal-800)</option>
+                      <option value="from-cyan-600 to-sky-800">Cyber Punk (from-cyan-600 to-sky-800)</option>
+                      <option value="from-violet-600 to-fuchsia-800">Magma Cosmic (from-violet-600 to-fuchsia-800)</option>
+                      <option value="from-amber-600 to-rose-700">Crépuscule d'Or (from-amber-600 to-rose-700)</option>
+                      <option value="from-neutral-850 to-zinc-950">Noir Mat Moderne (from-neutral-850 to-zinc-950)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1.5">Description de la création *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={galleryForm.desc}
+                      onChange={(e) => setGalleryForm({ ...galleryForm, desc: e.target.value })}
+                      placeholder="Décrivez brièvement le design (Ex: Concept d'application mobile d'élite avec mode sombre...)"
+                      className="w-full bg-slate-950/80 border border-slate-850 focus:border-purple-500 rounded-xl px-4 py-2.5 text-white transition-all outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    {isGalleryEditingId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGalleryForm({
+                            title: "",
+                            category: "UI/UX Design",
+                            color: "from-blue-600 to-indigo-800",
+                            aspect: "aspect-video",
+                            desc: "",
+                            image: ""
+                          });
+                          setIsGalleryEditingId(null);
+                        }}
+                        className="flex-1 bg-slate-950 border border-slate-850 hover:bg-slate-900 text-zinc-400 font-bold uppercase py-3 rounded-xl transition-all"
+                      >
+                        Annuler
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-red-600 hover:brightness-110 text-white font-bold uppercase py-3 rounded-xl transition-all cursor-pointer flex items-center justify-center space-x-2"
+                    >
+                      <span>{isGalleryEditingId ? "Mettre à jour" : "Ajouter à la Galerie"}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Items List Column */}
+              <div className="lg:col-span-7 bg-slate-900/40 backdrop-blur-md border border-slate-800/80 p-6 rounded-3xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <h4 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+                    Liste des créations ({galleryItems.length})
+                  </h4>
+                  <span className="text-[10px] bg-purple-900/40 text-purple-300 border border-purple-800 px-2 py-0.5 rounded font-mono">
+                    Firestore Sync
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[640px] overflow-y-auto pr-1">
+                  {galleryItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="group relative rounded-2xl border border-slate-850 bg-slate-950 overflow-hidden flex flex-col justify-between"
+                    >
+                      {/* Visual Preview */}
+                      <div className={`relative h-28 w-full bg-gradient-to-br ${item.color} flex items-center justify-center p-3 overflow-hidden`}>
+                        {item.image && (
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="absolute inset-0 w-full h-full object-cover opacity-60"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all" />
+                        <div className="relative z-10 text-center">
+                          <span className="text-[10px] font-mono bg-black/60 px-2 py-0.5 rounded text-purple-400 border border-slate-800">
+                            {item.category}
+                          </span>
+                          <p className="text-white font-bold text-xs mt-1.5 drop-shadow-md line-clamp-1">{item.title}</p>
+                        </div>
+                      </div>
+
+                      {/* Content details */}
+                      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between bg-slate-950">
+                        <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed">{item.desc}</p>
+                        <div className="text-[10px] font-mono text-zinc-500 flex items-center justify-between">
+                          <span>Ratio: {item.aspect}</span>
+                          <span>ID: {item.id}</span>
+                        </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-900">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGalleryForm({
+                                title: item.title,
+                                category: item.category,
+                                color: item.color,
+                                aspect: item.aspect,
+                                desc: item.desc,
+                                image: item.image || ""
+                              });
+                              setIsGalleryEditingId(item.id);
+                            }}
+                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-zinc-300 font-mono py-1.5 px-3 rounded-lg text-[10px] uppercase border border-slate-850 hover:text-white transition-all flex items-center justify-center space-x-1"
+                          >
+                            <Edit className="w-3 h-3 text-blue-500" />
+                            <span>Modifier</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGallery(item.id)}
+                            className="bg-red-950/40 hover:bg-red-900 border border-red-900/60 text-red-300 font-mono py-1.5 px-2.5 rounded-lg text-[10px] uppercase transition-all flex items-center justify-center"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {galleryItems.length === 0 && (
+                    <div className="col-span-2 text-center py-12 text-zinc-500">
+                      <ImageIcon className="w-8 h-8 mx-auto text-zinc-700 mb-2" />
+                      <p className="text-xs font-mono">Aucun élément de galerie trouvé.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -5453,7 +5778,6 @@ export const AdminPanel: React.FC = () => {
                     <ImageIcon className="absolute left-3.5 top-3 w-4 h-4 text-zinc-550" />
                     <input
                       type="url"
-                      required
                       value={educationForm.bannerUrl}
                       onChange={(e) => setEducationForm({ ...educationForm, bannerUrl: e.target.value })}
                       placeholder="https://..."
@@ -5488,9 +5812,9 @@ export const AdminPanel: React.FC = () => {
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {(educationForm.tags || []).map(t => (
+                    {(educationForm.tags || []).map((t, idx) => (
                       <span 
-                        key={t} 
+                        key={`${t}-${idx}`} 
                         className="px-2 py-1 rounded bg-slate-900 border border-zinc-800/60 text-[10px] font-mono text-zinc-300 hover:line-through cursor-pointer flex items-center space-x-1"
                         onClick={() => handleRemoveTag(t)}
                         title="Cliquer pour supprimer"
@@ -5624,7 +5948,6 @@ export const AdminPanel: React.FC = () => {
                     <ImageIcon className="absolute left-3.5 top-3 w-4 h-4 text-zinc-550" />
                     <input
                       type="url"
-                      required
                       value={educationForm.bannerUrl}
                       onChange={(e) => setEducationForm({ ...educationForm, bannerUrl: e.target.value })}
                       placeholder="https://..."
@@ -5659,9 +5982,9 @@ export const AdminPanel: React.FC = () => {
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {(educationForm.tags || []).map(t => (
+                    {(educationForm.tags || []).map((t, idx) => (
                       <span 
-                        key={t} 
+                        key={`${t}-${idx}`} 
                         className="px-2 py-1 rounded bg-slate-900 border border-zinc-800/60 text-[10px] font-mono text-zinc-300 hover:line-through cursor-pointer flex items-center space-x-1"
                         onClick={() => handleRemoveTag(t)}
                         title="Cliquer pour supprimer"
@@ -5704,7 +6027,7 @@ export const AdminPanel: React.FC = () => {
 
           {/* WINDOW 3: DOCUMENTATION (SUPPORT GUIDES & SPECIFICATIONS) */}
           {educationForm.type === "Doc" && (
-            <div className="w-full max-w-xl bg-slate-950 border border-amber-500/20 shadow-2xl shadow-amber-500/10 rounded-3xl p-6 sm:p-8 space-y-6 relative max-h-[90vh] overflow-y-auto w-full">
+            <div className="w-full max-w-4xl bg-slate-950 border border-amber-500/20 shadow-2xl shadow-amber-500/10 rounded-3xl p-6 sm:p-8 space-y-6 relative max-h-[90vh] overflow-y-auto">
               <button 
                 onClick={() => setIsEducationModalOpen(false)}
                 className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-900 text-zinc-500 hover:text-white transition-colors cursor-pointer"
@@ -5809,7 +6132,6 @@ export const AdminPanel: React.FC = () => {
                     <ImageIcon className="absolute left-3.5 top-3 w-4 h-4 text-zinc-550" />
                     <input
                       type="url"
-                      required
                       value={educationForm.bannerUrl}
                       onChange={(e) => setEducationForm({ ...educationForm, bannerUrl: e.target.value })}
                       placeholder="https://..."
@@ -5844,9 +6166,9 @@ export const AdminPanel: React.FC = () => {
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {(educationForm.tags || []).map(t => (
+                    {(educationForm.tags || []).map((t, idx) => (
                       <span 
-                        key={t} 
+                        key={`${t}-${idx}`} 
                         className="px-2 py-1 rounded bg-slate-900 border border-zinc-800/60 text-[10px] font-mono text-zinc-300 hover:line-through cursor-pointer flex items-center space-x-1"
                         onClick={() => handleRemoveTag(t)}
                         title="Cliquer pour supprimer"
@@ -5859,50 +6181,13 @@ export const AdminPanel: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5 font-sans">
-                  <label className="text-xs font-mono font-bold text-zinc-400 uppercase">Document Technique</label>
-                  <div 
-                    className={`border-2 border-dashed rounded-xl p-6 transition-all flex flex-col items-center justify-center text-center cursor-pointer ${docDragActive ? 'border-amber-500 bg-amber-950/20' : 'border-slate-800 hover:border-slate-700 bg-slate-900/50'}`}
-                    onDragEnter={(e) => { e.preventDefault(); setDocDragActive(true); }}
-                    onDragLeave={(e) => { e.preventDefault(); setDocDragActive(false); }}
-                    onDragOver={(e) => { e.preventDefault(); setDocDragActive(true); }}
-                    onDrop={(e) => { 
-                      e.preventDefault(); 
-                      setDocDragActive(false); 
-                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                        setDocFile(e.dataTransfer.files[0]);
-                      }
-                    }}
-                    onClick={() => document.getElementById('doc-upload')?.click()}
-                  >
-                    <input 
-                      type="file" 
-                      id="doc-upload" 
-                      className="hidden" 
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setDocFile(e.target.files[0]);
-                        }
-                      }}
-                    />
-                    {docFile ? (
-                      <>
-                        <FileText className="w-8 h-8 text-amber-500 mb-2" />
-                        <span className="text-xs text-white font-mono">{docFile.name}</span>
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.stopPropagation(); setDocFile(null); }}
-                          className="mt-2 text-[10px] text-zinc-500 hover:text-red-400 underline"
-                        >
-                          Supprimer
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-8 h-8 text-zinc-600 mb-2" />
-                        <span className="text-xs text-zinc-400 font-mono">Glissez-déposez le PDF/Doc, ou cliquez pour charger</span>
-                      </>
-                    )}
-                  </div>
+                  <label className="text-xs font-mono font-bold text-zinc-400 uppercase">Contenu de la Fiche Technique / Guide d'Élite</label>
+                  <RichTextEditor
+                    value={educationForm.content || ""}
+                    onChange={(val) => setEducationForm({ ...educationForm, content: val })}
+                    themeColor="amber"
+                    placeholder="Rédigez la documentation d'élite de votre API / guide ici (supporte le Markdown, police, couleurs, liens, etc.)..."
+                  />
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-900">

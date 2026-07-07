@@ -129,6 +129,7 @@ export const Navbar: React.FC = () => {
                   location.pathname === "/portfolio" || 
                   location.pathname === "/process" || 
                   location.pathname === "/partners" || 
+                  location.pathname === "/gallery" || 
                   location.pathname === "/about-us";
 
                 return (
@@ -162,6 +163,7 @@ export const Navbar: React.FC = () => {
                           <div className="flex flex-col space-y-1">
                             {[
                               { label: t("navbar.portfolio"), path: "/portfolio" },
+                              { label: t("navbar.gallery"), path: "/gallery" },
                               { label: t("navbar.processus"), path: "/process" },
                               { label: t("navbar.partners"), path: "/partners" },
                               { label: t("navbar.about"), path: "/about-us" }
@@ -464,6 +466,7 @@ export const Navbar: React.FC = () => {
                           location.pathname === "/portfolio" || 
                           location.pathname === "/process" || 
                           location.pathname === "/partners" || 
+                          location.pathname === "/gallery" || 
                           location.pathname === "/about-us";
 
                         return (
@@ -491,6 +494,7 @@ export const Navbar: React.FC = () => {
                                 >
                                   {[
                                     { label: t("navbar.portfolio"), path: "/portfolio" },
+                                    { label: t("navbar.gallery"), path: "/gallery" },
                                     { label: t("navbar.processus"), path: "/process" },
                                     { label: t("navbar.partners"), path: "/partners" },
                                     { label: t("navbar.about"), path: "/about-us" }

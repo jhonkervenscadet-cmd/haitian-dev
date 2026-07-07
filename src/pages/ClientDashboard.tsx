@@ -99,7 +99,7 @@ const ClientInvoiceCard: React.FC<ClientInvoiceCardProps> = ({ inv, db, storage,
 
         const savedInvoicesRaw = localStorage.getItem("haitiandev_invoices_local");
         if (savedInvoicesRaw) {
-          const cached = JSON.parse(savedInvoicesRaw);
+          const cached = (function(val){ try { return JSON.parse(val); } catch(e) { return null; } })(savedInvoicesRaw);
           const index = cached.findIndex((i: any) => i.id === inv.id);
           if (index >= 0) {
             cached[index].file = downloadURL;
@@ -203,7 +203,7 @@ const ClientInvoiceCard: React.FC<ClientInvoiceCardProps> = ({ inv, db, storage,
                     } else {
                       const savedInvoicesRaw = localStorage.getItem("haitiandev_invoices_local");
                       if (savedInvoicesRaw) {
-                        const cached = JSON.parse(savedInvoicesRaw);
+                        const cached = (function(val){ try { return JSON.parse(val); } catch(e) { return null; } })(savedInvoicesRaw);
                         const index = cached.findIndex((i: any) => i.id === inv.id);
                         if (index >= 0) {
                           cached[index].status = "En attente de vérification";
@@ -313,7 +313,7 @@ export const ClientDashboard: React.FC = () => {
 
   const clientInfo = useMemo(() => {
     const savedUserRaw = localStorage.getItem("haitiandev_user");
-    const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
+    const savedUser = savedUserRaw ? (function(val){ try { return JSON.parse(val); } catch(e) { return null; } })(savedUserRaw) : null;
     return {
       name: userProfile?.fullName || firebaseUser?.displayName || savedUser?.name || "Haiti Innovate",
       email: firebaseUser?.email || savedUser?.email || "contact@haiti-innovate.ht"
@@ -341,7 +341,7 @@ export const ClientDashboard: React.FC = () => {
       }
 
       try {
-        const storedSeenIds = JSON.parse(raw) as string[];
+        const storedSeenIds = (function(val){ try { return JSON.parse(val); } catch(e) { return []; } })(raw) as string[];
         
         // If the tab is currently active, mark all items as seen immediately
         if (activeTab === tabId) {
@@ -413,7 +413,7 @@ export const ClientDashboard: React.FC = () => {
       // Offline fallback
       const savedUserRaw = localStorage.getItem("haitiandev_user");
       if (savedUserRaw) {
-        const savedUser = JSON.parse(savedUserRaw);
+        const savedUser = (function(val){ try { return JSON.parse(val); } catch(e) { return {}; } })(savedUserRaw);
         setUserProfile({
           fullName: savedUser.name || "Haiti Innovate",
           profilePicture: savedUser.profilePicture || "",
@@ -451,7 +451,7 @@ export const ClientDashboard: React.FC = () => {
         // Simulated local storage user session
         const savedUserRaw = localStorage.getItem("haitiandev_user");
         if (savedUserRaw) {
-          const savedUser = JSON.parse(savedUserRaw);
+          const savedUser = (function(val){ try { return JSON.parse(val); } catch(e) { return {}; } })(savedUserRaw);
           setUserProfile({
             fullName: savedUser.name || "Haiti Innovate",
             profilePicture: savedUser.profilePicture || "",
@@ -531,7 +531,7 @@ export const ClientDashboard: React.FC = () => {
       // Sync with LocalStorage for both simulated and real users
       const savedUserRaw = localStorage.getItem("haitiandev_user");
       if (savedUserRaw) {
-        const savedUser = JSON.parse(savedUserRaw);
+        const savedUser = (function(val){ try { return JSON.parse(val); } catch(e) { return {}; } })(savedUserRaw);
         savedUser.name = editName;
         if (photoURL) {
           savedUser.profilePicture = photoURL;
@@ -620,7 +620,7 @@ export const ClientDashboard: React.FC = () => {
         console.info("Simulating password change for offline/local storage user...");
         const savedUserRaw = localStorage.getItem("haitiandev_user");
         if (savedUserRaw) {
-          const savedUser = JSON.parse(savedUserRaw);
+          const savedUser = (function(val){ try { return JSON.parse(val); } catch(e) { return {}; } })(savedUserRaw);
           savedUser.password = newPassword;
           localStorage.setItem("haitiandev_user", JSON.stringify(savedUser));
         }
@@ -662,7 +662,7 @@ export const ClientDashboard: React.FC = () => {
       let localAccesses: any[] = [];
       if (rawLocal) {
         try {
-          const parsed = JSON.parse(rawLocal);
+          const parsed = (function(val){ try { return JSON.parse(val); } catch(e) { return []; } })(rawLocal);
           if (Array.isArray(parsed)) {
             localAccesses = parsed
               .filter((item: any) => item && item.clientEmail === clientInfo.email)
@@ -753,7 +753,7 @@ export const ClientDashboard: React.FC = () => {
       let localDevis: any[] = [];
       if (rawLocal) {
         try {
-          const parsed = JSON.parse(rawLocal);
+          const parsed = (function(val){ try { return JSON.parse(val); } catch(e) { return []; } })(rawLocal);
           if (Array.isArray(parsed)) {
             localDevis = parsed
               .filter((item: any) => item && (item.email === clientInfo.email || item.clientEmail === clientInfo.email))
@@ -877,7 +877,7 @@ export const ClientDashboard: React.FC = () => {
     const fetchInvoicesLocal = () => {
       const savedInvoicesRaw = localStorage.getItem("haitiandev_invoices_local");
       if (savedInvoicesRaw) {
-        const cached = JSON.parse(savedInvoicesRaw);
+        const cached = (function(val){ try { return JSON.parse(val); } catch(e) { return null; } })(savedInvoicesRaw);
         const filtered = cached.filter((inv: any) => inv && inv.email === clientInfo.email);
         setInvoices(filtered);
       }
@@ -1106,7 +1106,7 @@ export const ClientDashboard: React.FC = () => {
         <div className="flex-grow space-y-8">
           
           {activeTab === "projects" && (() => {
-            const displayProjects = [...projects];
+            const displayProjects: any[] = Array.from(new Map<string, any>(projects.map((p: any) => [p.id, p])).values());
             return (
               <div className="space-y-6">
                 {/* Header with Sub-tabs */}
@@ -1174,8 +1174,8 @@ export const ClientDashboard: React.FC = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                              {project.tech?.map((t: string) => (
-                                <span key={t} className="px-3 py-1.5 bg-white/5 rounded-xl text-[10px] font-bold text-zinc-500 border border-white/5 uppercase tracking-tighter">{t}</span>
+                              {project.tech?.map((t: string, idx: number) => (
+                                <span key={`${t}-${idx}`} className="px-3 py-1.5 bg-white/5 rounded-xl text-[10px] font-bold text-zinc-500 border border-white/5 uppercase tracking-tighter">{t}</span>
                               ))}
                             </div>
 
@@ -1440,7 +1440,7 @@ export const ClientDashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-6">
-                  {projectAccesses.map((project) => {
+                  {Array.from(new Map<string, any>(projectAccesses.map((p: any) => [p.id, p])).values()).map((project: any) => {
                     return (
                       <div 
                         key={`direct-cms-${project.id}`} 
@@ -1634,7 +1634,7 @@ export const ClientDashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.map((msg) => (
+                  {Array.from(new Map<string, any>(messages.map((m: any) => [m.id, m])).values()).map((msg: any) => (
                     <div key={msg.id} className="bg-[#0c0c12] border border-white/5 rounded-2xl p-6 md:p-8 hover:border-white/10 transition-all space-y-4">
                       <div className="flex flex-col md:flex-row justify-between gap-4 border-b border-white/5 pb-4">
                         <div>
@@ -1671,7 +1671,7 @@ export const ClientDashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {invoices.map((inv) => (
+                  {Array.from(new Map<string, any>(invoices.map((i: any) => [i.id, i])).values()).map((inv: any) => (
                     <ClientInvoiceCard 
                       key={inv.id} 
                       inv={inv} 
